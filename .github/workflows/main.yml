@@ -20,3 +20,7 @@ jobs:
 
       - name: Run unit tests
         run: raco test path/to/tests/*.rkt
+
+      - name: Check test results and prevent push on failure
+        if: ${{ failure() }}
+        run: echo "Tests failed. Changes cannot be pushed to main." && exit 1
