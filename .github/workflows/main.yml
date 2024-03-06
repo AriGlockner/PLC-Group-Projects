@@ -20,4 +20,3 @@ jobs:
 
       - name: Run unit tests
         run: raco test path/to/tests/*.rkt
-        on: push
