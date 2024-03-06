@@ -24,7 +24,7 @@ jobs:
           version: '8.11'
 
       - name: Run unit tests
-        run: raco test test.rkt
+        run: raco test tests.rkt
 
       - name: Check test results and prevent push on failure
         if: ${{ failure() }}
