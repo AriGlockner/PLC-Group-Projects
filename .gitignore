@@ -8,3 +8,4 @@
 compiled/drracket/errortrace/simpleParser_rkt.dep
 *.dep
 *.zo
+*.rkt~
