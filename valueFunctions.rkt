@@ -1,5 +1,9 @@
 #lang racket
 
+(provide (all-defined-out))
+
+(require "utils.rkt")
+
 ; (<op> <int exp> <int exp>) OR (<op> <int exp>)
 (define (M_int ls state)
   (cond
