@@ -1,11 +1,10 @@
-; given a key and the state of the program, return the key's value
-(define lookup
-  (lambda (key state)
-  (cond
-    ((null? state) (error "variable used before declared")) ; if state is empty
-    ((eq? key (caar state)) (cadar state)) ; return if key found
-    (else (lookup key (cdr state))) ; continue to search rest of list if not found
-  )))
+#lang racket
+
+(provide (all-defined-out))
+
+(require "utils.rkt")
+(require "valueFunctions.rkt")
+
 
 ; given an arbitrary expression, determine the state of the program after the expression
 (define M_state
@@ -22,23 +21,6 @@
       ((eq? 'return (keyword exp)) (M_value (cadr exp) state))
       (else ('error)))))
 
-
-; Add Binding to the state
-(define add-binding
-  (lambda (name value state)
-    (if (null? state)
-        (cons (cons name (cons value '())) '())
-        (cons (car state) (add-binding name value (cdr state))))
-    ))
-
-; Remove Binding from the state
-(define remove-binding
-  (lambda (name state)
-    (cond
-      [(null? state) '()]
-      [(eq? (caar state) name) (cdr state)]
-      [else (cons (car state) (remove-binding name (cdr state)))]
-      )))
 
 ; assign (=) operation
 (define (M_state_assign var expr state)

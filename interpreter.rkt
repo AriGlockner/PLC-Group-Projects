@@ -8,8 +8,7 @@
 (require "simpleParser.rkt")
 (require "stateFunctions.rkt")
 (require "valueFunctions.rkt")
-(requre "utils.rkt")
-(require rackunit)
+(require "utils.rkt")
 
 
 ; putting it all together, take a filename, parse the file, and interpret the results
