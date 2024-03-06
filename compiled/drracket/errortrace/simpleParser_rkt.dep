@@ -1,0 +1,1 @@
+("8.11.1" tarm64osx ("b465fe71bb0b144e49e8079fb7c6d29c616f0acb" . "67f3c170753a523d660adfbfedd8e21d776bfe5c") #"/Users/gabe/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/PLC-Group-Projects/lex.rkt" (collects #"drracket" #"private" #"drracket-errortrace-key.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt"))
