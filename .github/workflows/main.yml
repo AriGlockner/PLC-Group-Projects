@@ -1,7 +1,7 @@
 name: Racket Unit Tests
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
@@ -19,7 +19,7 @@ jobs:
           version: '8.11.1' # Adjust the Racket version as needed
 
       - name: Run unit tests
-        run: raco test path/to/tests/*.rkt
+        run: raco test test.rkt
 
       - name: Check test results and prevent push on failure
         if: ${{ failure() }}
