@@ -68,12 +68,12 @@
 ;(M_state_while '(!= x 3) '(= x (- x 1)) state) ; works x = 3
 ;(M_state_while 'a '(= a (! a)) state)
 
-;(M_bool '(> x 5) state)
-;(M_bool '(< x 5) state)
-;(M_bool '(>= x 5) state)
-;(M_bool '(<= x 5) state)
-;(M_bool '(== x 5) state)
-;(M_bool '(!= x 5) state)
+(M_bool '(> x 5) state)
+(M_bool '(< x 5) state)
+(M_bool '(>= x 5) state)
+(M_bool '(<= x 5) state)
+(M_bool '(== x 5) state)
+(M_bool '(!= x 5) state)
 
 ;(M_state_if '(if (< x y) (= x (+ x y))) state)
 ;(M_state_if '(if (> x y) (= x (+ x y))) state)

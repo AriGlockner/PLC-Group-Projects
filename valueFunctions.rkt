@@ -69,8 +69,7 @@
                        (lambda (r-left)
                          (if (eq? r-left 'true)
                              (return 'false)
-                             (return 'true))))))
-                         
+                             (return 'true))))))           
       ; Can't just compare #t and #f, because we need to return 'true and 'false
       ; That means we need to check all cases for each operator that could return 'true or 'false
        ((and (eq? (operator ls) '&&) 
@@ -81,7 +80,6 @@
                                        (if (and (eq? r-right 'true) (eq? r-left 'true))
                                            (return 'true)
                                            (return 'false))))))))
-
        ((and (eq? (operator ls) '||) 
             (M_bool_cps (leftoperand ls) state
                        (lambda (r-left)
@@ -91,27 +89,23 @@
                                            (return 'true)
                                            (if (eq? r-left 'true)
                                                (return 'true)
-                                               (return 'false)))))))))
-                                     
-      
+                                               (return 'false)))))))))                                  
       ((and (eq? (operator ls) '==)
             (M_int_cps (rightoperand ls) state
                        (lambda (r-right)
                          (M_int_cps (leftoperand ls) state
                                     (lambda (r-left)
-                                      (if (eq? r-right r-left)
+                                      (if (= r-right r-left)
                                           (return 'true)
-                                          (return 'false))))))))
-      
+                                          (return 'false))))))))    
       ((and (eq? (operator ls) '!=)
             (M_int_cps (rightoperand ls) state
                        (lambda (r-right)
                          (M_int_cps (leftoperand ls) state
                                     (lambda (r-left)
-                                      (if (eq? r-right r-left)  ; change =
+                                      (if (= r-right r-left)  
                                           (return 'false)
-                                          (return 'true))))))))
-      
+                                          (return 'true)))))))) 
       ((and (eq? (operator ls) '>)
       (M_int_cps (rightoperand ls) state
                  (lambda (r-right)
@@ -120,7 +114,6 @@
                                 (if (> r-right r-left)
                                     (return 'true)
                                     (return 'false))))))))
-
       ((and (eq? (operator ls) '<)
       (M_int_cps (rightoperand ls) state
                  (lambda (r-right)
@@ -129,7 +122,6 @@
                                 (if (< r-right r-left)
                                     (return 'true)
                                     (return 'false))))))))
-
       ((and (eq? (operator ls) '<=)
       (M_int_cps (rightoperand ls) state
                  (lambda (r-right)
@@ -138,7 +130,6 @@
                                 (if (<= r-right r-left)
                                     (return 'true)
                                     (return 'false))))))))
-
        ((and (eq? (operator ls) '>=)
       (M_int_cps (rightoperand ls) state
                  (lambda (r-right)
@@ -147,7 +138,6 @@
                                 (if (>= r-right r-left)
                                     (return 'true)
                                     (return 'false))))))))
-       
       (else (return 'error)))))
 
 
