@@ -55,7 +55,8 @@
 ;(M_state '(return (+ x y)) state) ; 17
 ;(M_state '(return (- x y)) state) ; -7
 ;(M_state '(return (* x y)) state) ; 60
-;(M_state '(return (/ x y)) state) ; 5/4 or 0
+;(M_state '(return (/ x y)) state) ; 0
+;(M_state '(return (/ x z)) state) ; 1
 ;(M_state '(return (% x y)) state) ; 5
 ;(M_state '(return (* x (+ x 2))) state) ; 35
 
@@ -68,12 +69,12 @@
 ;(M_state_while '(!= x 3) '(= x (- x 1)) state) ; works x = 3
 ;(M_state_while 'a '(= a (! a)) state)
 
-(M_bool '(> x 5) state)
-(M_bool '(< x 5) state)
-(M_bool '(>= x 5) state)
-(M_bool '(<= x 5) state)
-(M_bool '(== x 5) state)
-(M_bool '(!= x 5) state)
+;(M_bool '(> x 5) state)
+;(M_bool '(< x 5) state)
+;(M_bool '(>= x 5) state)
+;(M_bool '(<= x 5) state)
+;(M_bool '(== x 5) state)
+;(M_bool '(!= x 5) state)
 
 ;(M_state_if '(if (< x y) (= x (+ x y))) state)
 ;(M_state_if '(if (> x y) (= x (+ x y))) state)
