@@ -6,6 +6,9 @@
 #lang racket
 
 (require "simpleParser.rkt")
+(require "stateFunctions.rkt")
+(require "valueFunctions.rkt")
+(requre "utils.rkt")
 (require rackunit)
 
 ; Some abstraction functions
