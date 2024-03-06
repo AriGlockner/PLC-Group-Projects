@@ -16,7 +16,7 @@ jobs:
       - name: Set up Racket
         uses: nau/gh-actions-racket@v1
         with:
-          version: '8.0' # Adjust the Racket version as needed
+          version: '8.11.1' # Adjust the Racket version as needed
 
       - name: Run unit tests
         run: raco test path/to/tests/*.rkt
