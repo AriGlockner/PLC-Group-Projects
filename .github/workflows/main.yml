@@ -7,16 +7,21 @@ on:
 
 jobs:
   test:
+    container:
+      image: racket/racket-ci:latest
+      options: --init
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Set up Racket
-        uses: nau/gh-actions-racket@v1
+      - name: Setup Racket environment
+        uses: Bogdanp/setup-racket@v1.11
         with:
-          version: '8.11.1' # Adjust the Racket version as needed
+          architecture: 'x64'
+          distribution: 'full'
+          version: '8.11'
 
       - name: Run unit tests
         run: raco test test.rkt
