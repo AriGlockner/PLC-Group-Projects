@@ -5,6 +5,8 @@
 
 #lang racket
 
+(provide (all-defined-out))
+
 (require "simpleParser.rkt")
 (require "stateFunctions.rkt")
 (require "valueFunctions.rkt")

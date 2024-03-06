@@ -1,25 +1,30 @@
 name: Racket Unit Tests
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
 jobs:
   test:
+    container:
+      image: racket/racket-ci:latest
+      options: --init
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Set up Racket
-        uses: nau/gh-actions-racket@v1
+      - name: Setup Racket environment
+        uses: Bogdanp/setup-racket@v1.11
         with:
-          version: '8.11.1' # Adjust the Racket version as needed
+          architecture: 'x64'
+          distribution: 'full'
+          version: '8.11'
 
       - name: Run unit tests
-        run: raco test path/to/tests/*.rkt
+        run: raco test tests.rkt
 
       - name: Check test results and prevent push on failure
         if: ${{ failure() }}
