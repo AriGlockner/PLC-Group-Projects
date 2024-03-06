@@ -1,3 +1,5 @@
+#lang racket
+
 ; given a key and the state of the program, return the key's value
 (define lookup
   (lambda (key state)
