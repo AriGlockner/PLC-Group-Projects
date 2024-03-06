@@ -22,6 +22,9 @@
          final-state)))))
 
 
+(define state '((x 5) (y 12) (z 3) (a true) (newVar 32) (flag false)))
+
+
 ;(M_state '(var foo) state)
 ;(M_state '(var bar true) state)
 ;(M_state '(while (!= (% y x) 3) (= y (+ y 1))) state)
@@ -43,9 +46,19 @@
 ; Test case: Attempt to assign a value to a variable that doesn't exist
 ;(M_state '(= nonexistentVar 7) state) ; Output: 'error
 
-;(M_state '(return (* x (+ x x))) state)
-;(M_state '(return (- y 1)) state)
-;(M_state '(= z 10) '((z error)))
+;(M_state '(return (* x (+ x x))) state) ; 50
+;(M_state '(return (- y 1)) state) ; 11
+;(M_state '(= z 10) '((z error))) ; error
+;(M_state '(return (* x (+ x x))) state) ; 50
+;(M_state '(return (- y 1)) state) ; 11
+;(M_state '(= z 10) '((z error))) ; error
+;(M_state '(return (+ x y)) state) ; 17
+;(M_state '(return (- x y)) state) ; -7
+;(M_state '(return (* x y)) state) ; 60
+;(M_state '(return (/ x y)) state) ; 5/4 or 0
+;(M_state '(return (% x y)) state) ; 5
+;(M_state '(return (* x (+ x 2))) state) ; 35
+
 
 ;(M_state_if_1 '(> x y) '(= x (+ x y)) state) ; false 
 ;(M_state_if_1 '(< x y) '(= x (+ x y)) state) ;  true x = 17
@@ -104,4 +117,4 @@
 ;(M_value '(true) state)
 ;(M_value 'true state)
 ;(M_value '(4) state)
-;(M_value '4 state
+;(M_value '4 state)

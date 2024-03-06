@@ -4,7 +4,6 @@
 
 (require "utils.rkt")
 
-(define state '((x 5) (y 12) (z 3) (a true) (newVar 32) (flag false)))
 
 ; (<op> <int exp> <int exp>) OR (<op> <int exp>)
 (define M_int
@@ -15,13 +14,40 @@
   (cond
     ((number? ls) (return ls))
     ((atom? ls) (return (lookup ls state)))
-    ((and (eq? (operator ls) '-) (null? (rightside ls))) (* (M_int (leftoperand ls) state) -1))
-    ((eq? (operator ls) '+) (+ (M_int (leftoperand ls) state) (M_int (rightoperand ls) state)))
-    ((eq? (operator ls) '-) (- (M_int (leftoperand ls) state) (M_int (rightoperand ls) state)))
-    ((eq? (operator ls) '*) (* (M_int (leftoperand ls) state) (M_int (rightoperand ls) state)))
-    ((eq? (operator ls) '/) (quotient (M_int (leftoperand ls) state) (M_int (rightoperand ls) state)))
-    ((eq? (operator ls) '%) (remainder (M_int (leftoperand ls) state) (M_int (rightoperand ls) state)))
-    (else 'error)))
+    ((and (eq? (operator ls) '-) (null? (rightside ls)))
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left) (return (* r-left -1)))))
+    ((eq? (operator ls) '+)
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left)
+              (M_int_cps (rightoperand ls) state
+                     (lambda (r-right)
+                       (return (+ r-left r-right)))))))
+    ((eq? (operator ls) '-)
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left)
+              (M_int_cps (rightoperand ls) state
+                     (lambda (r-right)
+                       (return (- r-left r-right)))))))
+    ((eq? (operator ls) '*)
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left)
+              (M_int_cps (rightoperand ls) state
+                     (lambda (r-right)
+                       (return (* r-left r-right)))))))
+    ((eq? (operator ls) '/)
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left)
+              (M_int_cps (rightoperand ls) state
+                     (lambda (r-right)
+                       (return (quotient r-left r-right)))))))
+    ((eq? (operator ls) '%)
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left)
+              (M_int_cps (rightoperand ls) state
+                     (lambda (r-right)
+                       (return (remainder r-left r-right)))))))
+    (else (return 'error))))
 
 
 
@@ -82,7 +108,7 @@
                        (lambda (r-right)
                          (M_int_cps (leftoperand ls) state
                                     (lambda (r-left)
-                                      (if (eq? r-right r-left)
+                                      (if (eq? r-right r-left)  ; change =
                                           (return 'false)
                                           (return 'true))))))))
       
