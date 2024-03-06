@@ -3,4 +3,4 @@
 (require rackunit)
 
 (check-equal? '() '())
-(check-equal? '() '())
+(check-equal? '() 'a)
