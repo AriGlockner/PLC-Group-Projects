@@ -142,16 +142,25 @@
 
 
 
+
 ; Given some arbitrary expression, determine the value of the expression
-(define (M_value ls state)
-  (cond
-    ; first two are useful just to catch here, so we don't always have to go to M_bool
-    ((eq? ls 'true)                       'true)
-    ((eq? ls 'false)                      'false)
-    ((number? ls)                         (M_int ls state))
-    ; Not a simple expression, try getting a value from M_int or M_bool
-    ((not (eq? (M_int ls state) 'error))  (M_int ls state))
-    ((not (eq? (M_bool ls state) 'error)) (M_bool ls state))
-    ; For handling cases like (M_bool '((false)) state), without this line just gives error
-    ((list? ls)                           (M_value (car ls) state))
-    (else                                 'error)))
+(define M_value
+  (lambda (ls state)
+    (M_value_cps ls state (lambda (v) v))))
+
+(define M_value_cps
+  (lambda (ls state return)
+    (cond
+      ; first two are useful just to catch here, so we don't always have to go to M_bool
+      ((eq? ls 'true) (return 'true))
+      ((eq? ls 'false) (return 'false))
+      ((number? ls) (M_int_cps ls state (lambda (r-int) (return r-int))))
+      ; Not a simple expression, try getting a value from M_int or M_bool
+      ((not (eq? (M_int ls state) 'error)) (M_int_cps ls state (lambda (r-int) (return r-int))))
+      ((not (eq? (M_bool ls state) 'error)) (M_bool_cps ls state (lambda (r-bool) (return r-bool))))
+      ; For handling cases like (M_bool '((false)) state), without this line just gives error
+      ((list? ls) (M_value_cps (car ls) state (lambda (r-value) (return r-value))))
+      (else (return 'error)))))
+
+
+     ; ((M_int_cps ls state (lambda (r-int) (not (eq? r-int 'error)) (return r-int))))

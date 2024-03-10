@@ -115,7 +115,7 @@
 ; Test case: Lookup a variable with a null value
 ;(lookup 'z state) ; Output: 3
 
-;(M_value '(true) state)
-;(M_value 'true state)
-;(M_value '(4) state)
-;(M_value '4 state)
+(M_value '(true) state) ; true
+(M_value 'true state) ; true
+(M_value '(4) state) ; 4
+(M_value '4 state) ; 4
