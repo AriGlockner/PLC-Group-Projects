@@ -19,14 +19,24 @@
         acc
         (foldl f (f (car lst) acc) (cdr lst)))))
 
-; given a key and the state of the program, return the key's value
+; new lookup
 (define lookup
   (lambda (key state)
   (cond
     ((null? state) (error "variable used before declared")) ; if state is empty
-    ((eq? key (caar state)) (cadar state)) ; return if key found
-    (else (lookup key (cdr state))) ; continue to search rest of list if not found
-  )))
+    ((list? (car state))
+       (let ((result (lookup-helper (caar state) (cadar state) key)))
+         (if (eq? result 'badday)
+             (lookup key (cdr state)) ; continue searching the rest of the state
+             result))) ; return the value if found
+    (else (error "state is bad")))))
+
+(define lookup-helper
+  (lambda (vars keys value)
+    (cond
+      ((or (null? vars) (null? keys)) 'badday)
+      ((eq? (car vars) value) (car keys))
+      (else (lookup-helper (cdr vars) (cdr keys) value)))))
 
 ; Add Binding to the state
 (define add-binding
