@@ -9,6 +9,7 @@
 (require "stateFunctions.rkt")
 (require "valueFunctions.rkt")
 (require "utils.rkt")
+(require rackunit)
 
 
 ; putting it all together, take a filename, parse the file, and interpret the results
@@ -22,7 +23,11 @@
          final-state)))))
 
 
-(define state '((x 5) (y 12) (z 3) (a true) (newVar 32) (flag false)))
+;(define state '((x 5) (y 12) (z 3) (a true) (newVar 32) (flag false)))
+
+(define state '(((z a) (11 12)) ((y) (11)) ((x) (10))))
+
+
 
 
 ;(M_state '(var foo) state)
@@ -115,7 +120,27 @@
 ; Test case: Lookup a variable with a null value
 ;(lookup 'z state) ; Output: 3
 
-(M_value '(true) state) ; true
-(M_value 'true state) ; true
-(M_value '(4) state) ; 4
-(M_value '4 state) ; 4
+;(M_value '(true) state) ; true
+;(M_value 'true state) ; true
+;(M_value '(4) state) ; 4
+;(M_value '4 state) ; 4
+
+
+
+; Test case: Lookup an existing variable with a value
+(lookup 'z state) ; Output: 11
+; Test case: Lookup an existing variable with a boolean value
+(lookup 'a state) ; Output: 12
+; Test case: Lookup a non-existent variable
+;(lookup 'nonexistentVar state) ; Output: 'error
+; Test case: Lookup a variable with a null value
+(lookup 'x state) ; Output: 10
+
+
+
+(check-equal? (lookup 'x '(((x) (10)))) 10)
+(check-equal? (lookup 'a '(((x a) (10 2)))) 2)
+(check-equal? (lookup 'a '(((z) (1)) ((x a) (10 2)))) 2)
+(check-equal? (lookup 'z '(((z) (1)) ((x a) (10 2)))) 1)
+(check-equal? (lookup 'z '(((z) (false)) ((x a) (10 2)))) 'false)
+(check-equal? (lookup 'x '(((z) (false)) ((x a) (10 2)))) 10)
