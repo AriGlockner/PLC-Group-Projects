@@ -1,6 +1,7 @@
 #lang racket
 
 (require "interpreter.rkt")
+(require "utils.rkt")
 (require rackunit)
 
 (check-equal? '() '())
@@ -28,3 +29,13 @@
 (check-equal? (interpret "test18.bad") 'true)
 (check-equal? (interpret "test19.bad") 128)
 (check-equal? (interpret "test20.bad") 12)
+
+
+
+
+(check-equal? (lookup 'x '(((x) (10)))) 10)
+(check-equal? (lookup 'a '(((x a) (10 2)))) 2)
+(check-equal? (lookup 'a '(((z) (1)) ((x a) (10 2)))) 2)
+(check-equal? (lookup 'z '(((z) (1)) ((x a) (10 2)))) 1)
+(check-equal? (lookup 'z '(((z) (false)) ((x a) (10 2)))) 'false)
+(check-equal? (lookup 'x '(((z) (false)) ((x a) (10 2)))) 10)
