@@ -54,3 +54,35 @@
       [(eq? (caar state) name) (cdr state)]
       [else (cons (car state) (remove-binding name (cdr state)))]
       )))
+
+
+(define update-binding
+  (lambda (name newvalue state)
+    (cond
+      ((null? state) state)
+      ((list? (car state))
+       (let ((result (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2) (cons v1 (list v2))))))
+         (display (cdr result))
+         (display (cadar state))
+         
+         (if (eq? (cdr result) (cadar state))
+             (cons (car state) (update-binding name newvalue (cdr state))) ; continue searching the rest of the state
+             (cons result (cdr state))))) ; return the value if found
+    (else (error "state is bad")))))
+
+
+
+(define update-binding-helper
+  (lambda (vars keys value newvalue return)
+    (cond
+      ;((or (null? vars) (null? keys)) (return 'badday 'badday))
+      ((or (null? vars) (null? keys)) (return '() '()))
+      ((eq? (car vars) value) (update-binding-helper (cdr vars) (cdr keys) value newvalue
+                                                     (lambda (r-vars r-keys) (return (cons value r-vars) (cons newvalue r-keys)))))
+      (else (update-binding-helper (cdr vars) (cdr keys) value newvalue
+                                   (lambda (r-vars r-keys) (return (cons (car vars) r-vars) (cons (car keys) r-keys)))))
+      )))
+    
+
+
+(update-binding-helper '(x) '(12) 'x '13 (lambda (v1 v2) (cons v1 (list v2))))

@@ -31,11 +31,16 @@
 (check-equal? (interpret "test20.bad") 12)
 
 
+(newline) (newline) (newline) 
+(display "END OF ETHAN TESTS")
+(newline) (newline)
+(newline) (newline) 
 
+(update-binding 'a 7 '(((x a) (10 2))))
 
-(check-equal? (lookup 'x '(((x) (10)))) 10)
-(check-equal? (lookup 'a '(((x a) (10 2)))) 2)
-(check-equal? (lookup 'a '(((z) (1)) ((x a) (10 2)))) 2)
-(check-equal? (lookup 'z '(((z) (1)) ((x a) (10 2)))) 1)
-(check-equal? (lookup 'z '(((z) (false)) ((x a) (10 2)))) 'false)
-(check-equal? (lookup 'x '(((z) (false)) ((x a) (10 2)))) 10)
+; update-binding tests
+(check-equal? (update-binding 'b 'true '(((b) (false)) ((z) (1)) ((x a) (10 2)))) '(((b) (true)) ((z) (1)) ((x a) (10 2))))
+(check-equal? (update-binding 'z 3 '(((z) (1)) ((x a) (10 2)))) '(((z) (3)) ((x a) (10 2))))
+(check-equal? (update-binding 'a 7 '(((x a) (10 2)))) '(((x a) (10 7))))
+(check-equal? (update-binding 'x 12 '(((x) (10)))) '(((x) (12))))
+(check-equal? (update-binding 'x 12 '(((a) (10)))) 'error)
