@@ -4,33 +4,6 @@
 
 (require "utils.rkt")
 (require "valueFunctions.rkt")
-(require rackunit)
-
-; Your state must now be a list of layers
-; Each layer will contain a list of variables and bindings similar to the basic state of part 1
-; The initial state consist of a single layer. Each time a new block is entered,
-; you must "cons" a new layer to the front of your state (but use abstraction and give the operation a better name than "cons").
-; Each time a variable is declared, that variable's binding goes into the top layer.
-; Each time a variable is accessed (either to lookup its binding or to change it),
-; the search must start in the top layer and work down. When a block is exited, the layer must be popped off of the state,
-; deleting any variables that were declared inside the block.  This will ensure that a variable is only active and live inside the block in which it is declared.
-
-; Layers - TODO: move to utils.rkt
-(define empty-layer '(() ()))
-(define layers '())
-(define merge cons)
-
-; Adds a new empty layer to the front of the layers
-(define add-layer
-  (lambda (layers)
-    (merge empty-layer layers)))
-
-; Removes the 1st layer from the front of the list of layers
-(define remove-layer
-  (lambda (layers)
-    (if (null? layers)
-        null
-        (cdr layers))))
 
 
 ; given an arbitrary expression, determine the state of the program after the expression

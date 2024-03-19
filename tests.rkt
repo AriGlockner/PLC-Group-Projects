@@ -2,7 +2,6 @@
 
 (require "interpreter.rkt")
 (require "utils.rkt")
-(require "stateFunctions.rkt")
 (require rackunit)
 
 (check-equal? '() '())
@@ -40,15 +39,3 @@
 (check-equal? (lookup 'z '(((z) (1)) ((x a) (10 2)))) 1)
 (check-equal? (lookup 'z '(((z) (false)) ((x a) (10 2)))) 'false)
 (check-equal? (lookup 'x '(((z) (false)) ((x a) (10 2)))) 10)
-
-; StateFunctions Tests
-; add-layer tests
-(check-equal? (add-layer '((() ()))) '((() ()) (() ())))
-(check-equal? (add-layer '(((x a) (10 2)))) '((() ()) ((x a) (10 2))))
-(check-equal? (add-layer '(((z) (1)) ((x a) (10 2)))) '((() ()) ((z) (1)) ((x a) (10 2))))
-
-; remove-layer tests
-(check-equal? (remove-layer '((() ()) (() ()))) '((() ())))
-(check-equal? (remove-layer '((() ()) ((x a) (10 2)))) '(((x a) (10 2))))
-(check-equal? (remove-layer '((() ()) ((z) (1)) ((x a) (10 2)))) '(((z) (1)) ((x a) (10 2))))
-(check-equal? (remove-layer '(((z) (1)) ((x a) (10 2)))) '(((x a) (10 2))))
