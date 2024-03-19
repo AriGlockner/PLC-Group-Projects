@@ -56,7 +56,7 @@
       [else (cons (car state) (remove-binding name (cdr state)))]
       )))
 
-
+; update binding
 (define update-binding
   (lambda (name newvalue state)
     (cond
