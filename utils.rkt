@@ -85,5 +85,3 @@
 
     
 
-
-(update-binding-helper '(x) '(12) 'x '13 (lambda (v1 v2 v3) (cons v1 (list v2))))
