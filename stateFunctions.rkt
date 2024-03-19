@@ -6,6 +6,9 @@
 (require "valueFunctions.rkt")
 
 
+
+
+
 ; given an arbitrary expression, determine the state of the program after the expression
 (define M_state
   (lambda (exp state)
@@ -23,12 +26,23 @@
 
 
 ; assign (=) operation
+
 (define (M_state_assign var expr state)
-  (if (or (eq? (M_value expr state) 'error) (eq? (lookup var state) 'error))
-      'error
-      (let* ((s1 (remove-binding var state))
-             (s2 (add-binding var (M_value expr state) s1)))
-        s2)))
+  (cond
+    ((or (eq? (M_value expr state) 'error)) 'error)
+    ((eq? (lookup var state) 'error) (display "adding binding") (display (lookup var state)) (add-binding var expr state))
+    (else
+     (display "  VAR  ")
+     (display var)
+     (display "  EXPR  ")
+     (display expr)
+     (display "  STATE  ")
+     (display state)
+     (display " LOOKUP ")
+     (display (lookup var state))
+     (update-binding var expr state))))
+
+
 
 ; handle if when we have 2 statements (then and else)
 (define (M_state_if_2 condition statement1 statement2 state)

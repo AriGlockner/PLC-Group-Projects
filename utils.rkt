@@ -23,7 +23,7 @@
 (define lookup
   (lambda (key state)
   (cond
-    ((null? state) (error "variable used before declared")) ; if state is empty
+    ((null? state) 'error) ; if state is empty
     ((list? (car state))
        (let ((result (lookup-helper (caar state) (cadar state) key)))
          (if (eq? result 'badday)
@@ -46,15 +46,6 @@
       (else
        (cons (cons (cons name (caar state)) (list (cons value (cadar state)))) (cdr state)) 
        ))))
-
-; Remove Binding from the state
-(define remove-binding
-  (lambda (name state)
-    (cond
-      [(null? state) '()]
-      [(eq? (caar state) name) (cdr state)]
-      [else (cons (car state) (remove-binding name (cdr state)))]
-      )))
 
 ; update binding
 (define update-binding
