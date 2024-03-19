@@ -58,10 +58,12 @@
 ; Add Binding to the state
 (define add-binding
   (lambda (name value state)
-    (if (null? state)
-        (add-binding name value (add-layer state)) ; State is empty => Add a layer then add bindings
-        (combine (add-to-layer name value (car state)) (cdr state)) ; Otherwise => Add binding to top layer
-        )))
+  (cond
+      ((null? state) (list (cons (list name) (list (list value)))))
+      (else
+       (cons (cons (cons name (caar state)) (list (cons value (cadar state)))) (cdr state)) 
+       ))))
+       
 
 (define add-to-layer
   (lambda (name value layer)
@@ -73,6 +75,7 @@
          (list value)
          (cons value (cadr layer))))))
 
+
 ; Remove Binding from the state
 (define remove-binding
   (lambda (name state)
@@ -81,3 +84,34 @@
       [(eq? (caar state) name) (cdr state)]
       [else (combine (car state) (remove-binding name (cdr state)))]
       )))
+
+; update binding
+(define update-binding
+  (lambda (name newvalue state)
+    (cond
+      ((null? state) (error "state should not be empty"))
+      ((list? (car state))
+       (let ((result (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) (cons v1 (list v2))))))
+         
+         
+         (if (eq? (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) v3)) 'notfound)
+             (cons (car state) (update-binding name newvalue (cdr state))) ; continue searching the rest of the state
+             (cons result (cdr state))))) ; return the value if found
+    (else (error "state is bad")))))
+
+
+(define update-binding-helper
+  (lambda (vars keys value newvalue return)
+    (cond
+      ((or (null? vars) (null? keys)) (return '() '() 'notfound))
+      ((eq? (car vars) value) 
+       (update-binding-helper (cdr vars) (cdr keys) value newvalue
+                              (lambda (r-vars r-keys status)
+                                (return (cons value r-vars) (cons newvalue r-keys) 'found))))
+      (else 
+       (update-binding-helper (cdr vars) (cdr keys) value newvalue
+                              (lambda (r-vars r-keys status)
+                                (return (cons (car vars) r-vars) (cons (car keys) r-keys) status)))))))
+
+    
+
