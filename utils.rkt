@@ -41,10 +41,11 @@
 ; Add Binding to the state
 (define add-binding
   (lambda (name value state)
-    (if (null? state)
-        (cons (cons name (cons value '())) '())
-        (cons (car state) (add-binding name value (cdr state))))
-    ))
+    (cond
+      ((null? state) (list (cons (list name) (list (list value)))))
+      (else
+       (cons (cons (cons name (caar state)) (list (cons value (cadar state)))) (cdr state)) 
+       ))))
 
 ; Remove Binding from the state
 (define remove-binding
@@ -55,7 +56,7 @@
       [else (cons (car state) (remove-binding name (cdr state)))]
       )))
 
-
+; update binding
 (define update-binding
   (lambda (name newvalue state)
     (cond
