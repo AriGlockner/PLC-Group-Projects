@@ -2,7 +2,6 @@
 
 (require "interpreter.rkt")
 (require "utils.rkt")
-(require "stateFunctions.rkt")
 (require rackunit)
 
 (check-equal? '() '())
@@ -41,7 +40,6 @@
 (check-equal? (lookup 'z '(((z) (false)) ((x a) (10 2)))) 'false)
 (check-equal? (lookup 'x '(((z) (false)) ((x a) (10 2)))) 10)
 
-; StateFunctions Tests
 ; add-layer tests
 (check-equal? (add-layer '((() ()))) '((() ()) (() ())))
 (check-equal? (add-layer '(((x a) (10 2)))) '((() ()) ((x a) (10 2))))
@@ -52,3 +50,12 @@
 (check-equal? (remove-layer '((() ()) ((x a) (10 2)))) '(((x a) (10 2))))
 (check-equal? (remove-layer '((() ()) ((z) (1)) ((x a) (10 2)))) '(((z) (1)) ((x a) (10 2))))
 (check-equal? (remove-layer '(((z) (1)) ((x a) (10 2)))) '(((x a) (10 2))))
+
+; Add-Binding Tests
+(check-equal? (add-binding 'a 5 null) '(((a) (5))))
+(check-equal? (add-binding 'x 10 '((() ()))) '(((x) (10))))
+(check-equal? (add-binding 'a 2 '(((x) (10)))) '(((x a) (10 2))))
+(check-equal? (add-binding 'z 1 '((() ()) ((x a) (10 2)))) '(((z) (1)) ((x a) (10 2))))
+(check-equal? (add-binding 'b 'false '((() ()) ((z) (1)) ((x a) (10 2)))) '(((b) (false)) ((z) (1)) ((x a) (10 2))))
+
+; Remove-Binding Tests

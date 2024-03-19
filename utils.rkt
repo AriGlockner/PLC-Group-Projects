@@ -9,6 +9,11 @@
 (define rightside cddr)
 (define rightoperand caddr)
 
+; Some layers functions
+(define empty-layer '(() ()))
+(define layers '())
+(define combine cons)
+
 ; useful for determining if an element is an atom or not
 (define (atom? x) (not (pair? x)))
 
@@ -38,13 +43,35 @@
       ((eq? (car vars) value) (car keys))
       (else (lookup-helper (cdr vars) (cdr keys) value)))))
 
+; Adds a new empty layer to the front of the layers
+(define add-layer
+  (lambda (layers)
+    (combine empty-layer layers)))
+
+; Removes the 1st layer from the front of the list of layers
+(define remove-layer
+  (lambda (layers)
+    (if (null? layers)
+        null
+        (cdr layers))))
+
 ; Add Binding to the state
 (define add-binding
   (lambda (name value state)
     (if (null? state)
-        (cons (cons name (cons value '())) '())
-        (cons (car state) (add-binding name value (cdr state))))
-    ))
+        (add-binding name value (add-layer state)) ; State is empty => Add a layer then add bindings
+        (combine (add-to-layer name value (car state)) (cdr state)) ; Otherwise => Add binding to top layer
+        )))
+
+(define add-to-layer
+  (lambda (name value layer)
+    (list
+     (if (null? (car layer))
+         (list name)
+         (cons name (car layer)))
+     (if (null? (cadr layer))
+         (list value)
+         (cons value (cadr layer))))))
 
 ; Remove Binding from the state
 (define remove-binding
@@ -52,5 +79,5 @@
     (cond
       [(null? state) '()]
       [(eq? (caar state) name) (cdr state)]
-      [else (cons (car state) (remove-binding name (cdr state)))]
+      [else (combine (car state) (remove-binding name (cdr state)))]
       )))
