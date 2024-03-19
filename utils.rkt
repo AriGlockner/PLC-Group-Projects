@@ -59,7 +59,7 @@
 (define update-binding
   (lambda (name newvalue state)
     (cond
-      ((null? state) (error "error on yo mama"))
+      ((null? state) (error "state should not be empty"))
       ((list? (car state))
        (let ((result (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) (cons v1 (list v2))))))
         ; (display (cadr result))
