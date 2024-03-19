@@ -47,6 +47,9 @@
        (cons (cons (cons name (caar state)) (list (cons value (cadar state)))) (cdr state)) 
        ))))
 
+
+
+
 ; Remove Binding from the state
 (define remove-binding
   (lambda (name state)

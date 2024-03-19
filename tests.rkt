@@ -47,3 +47,11 @@
 (check-equal? (lookup 'z '(((z) (1)) ((x a) (10 2)))) 1)
 (check-equal? (lookup 'z '(((z) (false)) ((x a) (10 2)))) 'false)
 (check-equal? (lookup 'x '(((z) (false)) ((x a) (10 2)))) 10)
+
+
+; add binding tests
+(check-equal? (add-binding 'x 10 '((() ()))) '(((x) (10))))
+(check-equal? (add-binding 'a 2 '(((x) (10)))) '(((a x) (2 10))))
+(check-equal? (add-binding 'z 1 '((() ()) ((x a) (10 2)))) '(((z) (1)) ((x a) (10 2))))
+(check-equal? (add-binding 'b 'false '((() ()) ((z) (1)) ((x a) (10 2)))) '(((b) (false)) ((z) (1)) ((x a) (10 2))))
+(check-equal? (add-binding 'x '3 '((() ()))) '(((x) (3))))
