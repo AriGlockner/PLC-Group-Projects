@@ -62,11 +62,6 @@
       ((null? state) (error "state should not be empty"))
       ((list? (car state))
        (let ((result (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) (cons v1 (list v2))))))
-        ; (display (cadr result))
-        ; (display (cadar state))
-        ; (display (eq? (cadr result) (cadar state)))
-        ; (display (eq? (cdr result) (cadar state)))
-        ; (display (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) v3)))
          
          
          (if (eq? (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) v3)) 'notfound)
