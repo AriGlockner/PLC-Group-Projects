@@ -65,5 +65,3 @@
 (check-equal? (add-binding 'a 2 '(((x) (10)))) '(((a x) (2 10))))
 (check-equal? (add-binding 'z 1 '((() ()) ((x a) (10 2)))) '(((z) (1)) ((x a) (10 2))))
 (check-equal? (add-binding 'b 'false '((() ()) ((z) (1)) ((x a) (10 2)))) '(((b) (false)) ((z) (1)) ((x a) (10 2))))
-
-; Remove-Binding Tests
