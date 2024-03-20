@@ -17,7 +17,7 @@
 ; useful for determining if an element is an atom or not
 (define (atom? x) (not (pair? x)))
 
-; useful for getting the final state as a single output rather than a list
+; useful for getting the final state as a single output rather than a list(check-equal? (M_state_assign 'a 5 '((() ()))) '(((a) (5))))
 (define foldl
   (lambda (f acc lst)
     (if (null? lst)
@@ -28,7 +28,7 @@
 (define lookup
   (lambda (key state)
   (cond
-    ((null? state) (error "variable used before declared")) ; if state is empty
+    ((null? state) 'error) ; if state is empty
     ((list? (car state))
        (let ((result (lookup-helper (caar state) (cadar state) key)))
          (if (eq? result 'badday)
@@ -89,10 +89,9 @@
 (define update-binding
   (lambda (name newvalue state)
     (cond
-      ((null? state) (error "state should not be empty"))
+      ((null? state) 'error)
       ((list? (car state))
        (let ((result (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) (cons v1 (list v2))))))
-         
          
          (if (eq? (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) v3)) 'notfound)
              (cons (car state) (update-binding name newvalue (cdr state))) ; continue searching the rest of the state
