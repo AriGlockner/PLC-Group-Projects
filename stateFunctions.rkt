@@ -27,7 +27,8 @@
       ((eq? 'if (keyword exp)) (M_state_if exp state))
       ((eq? 'while (keyword exp)) (M_state_while (cadr exp) (caddr exp) state))
       ((eq? 'return (keyword exp)) (M_value (cadr exp) state))
-      (else ('error)))))
+      ((eq? 'begin (keyword exp)) (M_state_block exp state))
+      (else 'error))))
 
 ; block statements
 (define (M_state_block ls state)

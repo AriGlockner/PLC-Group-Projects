@@ -124,10 +124,16 @@
 (check-equal? (M_state_if_1 '(< x y) '(= x (+ x y)) state) '(((x y a) (17 12 true))))
 (check-equal? (M_state_if_2 '(> x y) '(= x (+ x y)) '(= y (+ x y)) state) '(((x y a) (5 17 true))))
 
+(check-equal? (M_state_if '(if (< x 9) (begin (= x (+ x 1)))) state) '(((x y a) (6 12 true))))
+
+
 ; M_state_while tests
 (check-equal? (M_state_while '(!= (% y x) 3) '(= y (+ y 1)) state) '(((x y a) (5 13 true))))
 (check-equal? (M_state_while '(!= x 3) '(= x (- x 1)) state) '(((x y a) (3 12 true))))
 (check-equal? (M_state_while 'a '(= a (! a)) state) '(((x y a) (5 12 false))))
+
+(check-equal? (M_state_while '(< x 9) '(begin (= x (+ x 1))) state) '(((x y a) (9 12 true))))
+
 
 ; M_bool tests
 (check-equal? (M_bool '(> x 5) state) 'false)
@@ -147,3 +153,4 @@
 (check-equal? (M_state_block '(begin (var y 2) (var z (* x y)) (= x z)) '(((x) (10)))) '(((x) (20))))
 (check-equal? (M_state_block '(begin (var temp a) (= a b) (= b temp)) '(((b a) (1476 31160)))) '(((b a) (31160 1476))))
 (check-equal? (M_state_block '(begin (= a b) (= b r) (= r (% a b))) '(((r b a) (1 2 3)))) '(((r b a) (0 1 2))))
+
