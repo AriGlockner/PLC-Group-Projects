@@ -120,11 +120,6 @@
 (check-equal? (M_value 'true state) 'true)
 (check-equal? (M_value '(4) state) 4)
 (check-equal? (M_value '4 state) 4)
-
-
-(display "\n\nBAD TEST DONE\n\n")
-
-
 ; test cases for M_state_block
 (check-equal? (M_state_block '(begin (var y 2) (= x y)) '(((x) (10)))) '(((x) (2))))
 (check-equal? (M_state_block '(begin (var y 2) (var z (* x y)) (= x z)) '(((x) (10)))) '(((x) (20))))
