@@ -12,21 +12,15 @@
     (cond
       ((null? exp) state)
       ((and (list? exp) (list? (keyword exp)))
-      ; (display "\nexp")
-      ; (display exp)
-      ; (display "\ncar")
-      ; (display (car exp))
-      ; (display "\ncdr")
-      ; (display (cdr exp))
-      ; (display "\nEnd")
        (M_state (cdr exp) (M_state (car exp) state)))
        
       ((eq? 'var (keyword exp))
        (M_state_declare exp state))
       ((eq? '= (keyword exp)) (M_state_assign (cadr exp) (caddr exp) state))
       ((eq? 'if (keyword exp)) (M_state_if exp state))
-      ((eq? 'while (keyword exp)) (M_state_while (cadr exp) (caddr exp) state))
+      ((eq? 'while (keyword exp)) (M_state_while (cadr exp) (caddr exp) state (cdr exp)))
       ((eq? 'return (keyword exp)) (M_value (cadr exp) state))
+;      ((eq? 'break (keyword exp)) (M_state_break state null)) ; TODO fix
       (else ('error)))))
 
 ; block statements
@@ -41,8 +35,7 @@
     ((or (eq? (M_value expr state) 'error)) 'error)
     ((eq? (lookup var state) 'error) (add-binding var (M_value expr state))) ; if var is not in state
     (else
-     (update-binding var (M_value expr state) state)
-     )))
+     (update-binding var (M_value expr state) state))))
 
 ; handle if when we have 2 statements (then and else)
 (define (M_state_if_2 condition statement1 statement2 state)
@@ -80,13 +73,38 @@
     (else 'error)))
 
 ; while operation
-(define (M_state_while condition statement state)
+(define (M_state_while condition statement state next)
   (if (or (eq? (M_bool condition state) 'error)
           (eq? (M_state statement state) 'error))
       'error
-      (if (eq? (M_bool condition state) 'true)
-          (M_state_while condition statement (M_state statement state))
-          state)))
+
+      (loop condition statement state next) ; TODO: replace lambda (v) v with what next is supposed to be
+      
+;      (if (eq? (M_bool condition state) 'true)
+;          (M_state_while condition statement (M_state statement state))
+;          state
+          ))
+
+(define (loop condition statement state next)
+  (if (eq? (M_bool condition state) 'true)
+      ; Loop
+      (let ((repeat (lambda (s1) (loop condition statement s1 next))))
+      (M_state statement state repeat))
+      ; Break 
+      ;(M_state_break state next)
+      (next state) ; TODO: check
+      ))
+
+; Steps
+; 1) add next to M_state_while
+; 2) fix test cases to adjust for next being added
+; 3) Debug reading for .bad files
+
+; break operation
+(define (M_state_break state next)
+  '()
+  ; TODO
+  )
 
 ; declare (var) operation
 (define (M_state_declare expr state)

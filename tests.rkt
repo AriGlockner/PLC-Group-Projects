@@ -125,9 +125,13 @@
 (check-equal? (M_state_if_2 '(> x y) '(= x (+ x y)) '(= y (+ x y)) state) '(((x y a) (5 17 true))))
 
 ; M_state_while tests
-(check-equal? (M_state_while '(!= (% y x) 3) '(= y (+ y 1)) state) '(((x y a) (5 13 true))))
+(check-equal? (M_state_while '(!= (% y x) 3) '(= y (+ y 1)) state (lambda (v) v)) '(((x y a) (5 13 true))))
 (check-equal? (M_state_while '(!= x 3) '(= x (- x 1)) state) '(((x y a) (3 12 true))))
 (check-equal? (M_state_while 'a '(= a (! a)) state) '(((x y a) (5 12 false))))
+(check-equal? (M_state_while '(< x 10) '(begin (= x (- x 1)) (break) (= x (+ x 100))) '(((x) (0)))) '(((x) (-1))))
+(check-equal? (M_state_while '(> x -10) '(begin (= x (- x 1)) (continue) (= x (+ x 100))) '(((x) (0)))) '(((x) (-10))))
+(check-equal? (M_state_while '(< x 10) '(begin (while (< x 100) (begin (= x (+ x 1)) (if (> x 3) (break)))) (= x (+ x 5))) '(((x) (0)))) '(((x) (15))))
+(check-equal? (M_state_while 'true '(begin (break) (= x (+ x 13))) '(((x) (0)))) '(((x) (0))))
 
 ; M_bool tests
 (check-equal? (M_bool '(> x 5) state) 'false)
