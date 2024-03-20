@@ -147,3 +147,11 @@
 (check-equal? (M_state_block '(begin (var y 2) (var z (* x y)) (= x z)) '(((x) (10)))) '(((x) (20))))
 (check-equal? (M_state_block '(begin (var temp a) (= a b) (= b temp)) '(((b a) (1476 31160)))) '(((b a) (31160 1476))))
 (check-equal? (M_state_block '(begin (= a b) (= b r) (= r (% a b))) '(((r b a) (1 2 3)))) '(((r b a) (0 1 2))))
+
+
+
+(display "\n\nEnd of Ethan Tests \n\n")
+
+
+(M_state '(try body (catch (e) body) (finally body)) '(((x)(5))))
+

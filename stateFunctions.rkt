@@ -26,8 +26,9 @@
       ((eq? '= (keyword exp)) (M_state_assign (cadr exp) (caddr exp) state))
       ((eq? 'if (keyword exp)) (M_state_if exp state))
       ((eq? 'while (keyword exp)) (M_state_while (cadr exp) (caddr exp) state))
+      ((eq? 'try (keyword exp)) (M_state_try (cadr exp) (caddr exp) (cadddr exp) state))
       ((eq? 'return (keyword exp)) (M_value (cadr exp) state))
-      (else ('error)))))
+      (else 'error))))
 
 ; block statements
 (define (M_state_block ls state)
@@ -87,6 +88,23 @@
       (if (eq? (M_bool condition state) 'true)
           (M_state_while condition statement (M_state statement state))
           state)))
+
+
+(define (M_state_try body catch finally state)
+  (cond
+    ((or (null? body) (null? catch) (null? finally)) 'error)
+
+    (else
+     (display "\nbody")
+     (display body)
+     (display "\ncatch")
+     (display catch)
+     (display "\nfinally")
+     (display finally)
+     
+     )
+ 
+  ))
 
 ; declare (var) operation
 (define (M_state_declare expr state)
