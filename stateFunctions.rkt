@@ -30,6 +30,46 @@
 (define (M_state_assign var expr state)
   (cond
     ((or (eq? (M_value expr state) 'error)) 'error)
+
+    ((eq? (lookup var state) 'error) (add-binding var (M_value expr state))) ; if var is not in state
+    (else
+     (update-binding var (M_value expr state) state)
+     )))
+
+    
+
+ ;  ((not (eq? 'error (M_value expr state))) ; if expr is not int or bool
+ ;   (display "go")
+ ;    (display expr)
+ ;    (display (M_value expr state))
+
+     
+       
+
+   ; )
+
+ ;   ((not (or (number? expr) (eq? expr 'true) (eq? expr 'false)))
+  ;   (display "START")
+  ;   (display expr)
+  ;   (display (M_value expr state))
+
+   ;  )
+
+
+     ;(cond (eq? (lookup expr state) 'error)
+       
+
+
+ ;  ((and (not (or (number? expr) (eq? expr 'true) (eq? expr 'false))) (eq? (lookup expr state) 'error))
+  ;   (display expr)
+   ;  (display (lookup expr state))
+   ;  (error "expr not int or bool or variable")
+   ;  )
+   ; ((not (or (number? expr) (eq? expr 'true) (eq? expr 'false)))
+   ;  (M_state_assign var (lookup expr state) state)
+   ;  )
+  
+    
   ;  ((eq? (lookup var state) 'error) (error "variable doesn't exist yet")) ; variable not even created yet
   ;  ((eq? (lookup var state) 'null) (update-binding var expr state)) ; variable exists but has not been assigned
    ; (else
@@ -39,19 +79,19 @@
 
 
 
-     ((eq? (lookup var state) 'error) (display "adding binding") (display (lookup var state)) (add-binding var expr state))
-    (else
-     (display "  VAR  ")
-     (display var)
-     (display "  EXPR  ")
-     (display expr)
-     (display "  STATE  ")
-    (display state)
-     (display " LOOKUP ")
-     (display (lookup var state))
-     (update-binding var expr state)
+  ;   ((eq? (lookup var state) 'error) (display "adding binding") (display (lookup var state)) (add-binding var expr state))
+  ;  (else
+  ;   (display "  VAR  ")
+  ;   (display var)
+  ;   (display "  EXPR  ")
+  ;   (display expr)
+  ;   (display "  STATE  ")
+  ;  (display state)
+  ;   (display " LOOKUP ")
+  ;   (display (lookup var state))
+  ;   (update-binding var expr state)
 
-     )))
+   ;  )))
 
 
 
