@@ -72,3 +72,8 @@
 (display "Final test")
 (check-equal? (lookup 'b '(((z) (false)) ((x a) (10 2)))) 'error)
 
+
+(lookup 'x '(((x)(3))))
+(lookup 'x '(((y)(4))))
+(lookup 'x '(((x)(null))))
+
