@@ -30,28 +30,28 @@
 (define (M_state_assign var expr state)
   (cond
     ((or (eq? (M_value expr state) 'error)) 'error)
-    ((eq? (lookup var state) 'error) (error "variable doesn't exist yet")) ; variable not even created yet
-    ((eq? (lookup var state) 'null) (update-binding var expr state)) ; variable exists but has not been assigned
+  ;  ((eq? (lookup var state) 'error) (error "variable doesn't exist yet")) ; variable not even created yet
+  ;  ((eq? (lookup var state) 'null) (update-binding var expr state)) ; variable exists but has not been assigned
    ; (else
   ;   (error "attempting to redefine a variable"))))
-    (else
-     (update-binding var expr state))))
-
-
-
-    ; ((eq? (lookup var state) 'error) (display "adding binding") (display (lookup var state)) (add-binding var expr state))
   ;  (else
-  ;   (display "  VAR  ")
-  ;   (display var)
- ;    (display "  EXPR  ")
- ;    (display expr)
- ;    (display "  STATE  ")
- ;   (display state)
-  ;   (display " LOOKUP ")
-  ;   (display (lookup var state))
-  ;   (update-binding var expr state)
+  ;   (update-binding var expr state))))
 
-   ;;;  )))
+
+
+     ((eq? (lookup var state) 'error) (display "adding binding") (display (lookup var state)) (add-binding var expr state))
+    (else
+     (display "  VAR  ")
+     (display var)
+     (display "  EXPR  ")
+     (display expr)
+     (display "  STATE  ")
+    (display state)
+     (display " LOOKUP ")
+     (display (lookup var state))
+     (update-binding var expr state)
+
+     )))
 
 
 
