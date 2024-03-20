@@ -2,6 +2,7 @@
 
 (require "interpreter.rkt")
 (require "utils.rkt")
+(require "stateFunctions.rkt")
 (require rackunit)
 
 (check-equal? '() '())
@@ -65,3 +66,10 @@
 (check-equal? (add-binding 'a 2 '(((x) (10)))) '(((a x) (2 10))))
 (check-equal? (add-binding 'z 1 '((() ()) ((x a) (10 2)))) '(((z) (1)) ((x a) (10 2))))
 (check-equal? (add-binding 'b 'false '((() ()) ((z) (1)) ((x a) (10 2)))) '(((b) (false)) ((z) (1)) ((x a) (10 2))))
+
+; assign tests
+(check-equal? (M_state '(= x 10) '(((x) (null)))) '(((x) (10))))
+(check-equal? (M_state_assign 'x 10 '(((x) (null)))) '(((x) (10))))
+(check-equal? (M_state_assign 'x '(* 2 4) '(((x) (10)))) '(((x) (8))))
+(check-equal? (M_state_assign 'z 'x '(((z y x) (null 5 10)))) '(((z y x) (10 5 10))))
+(check-equal? (M_state_assign 'z '(* x y) '(((z y x) (null 5 10)))) '(((z y x) (50 5 10))))
