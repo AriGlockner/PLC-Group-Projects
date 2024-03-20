@@ -10,17 +10,30 @@
 (define M_state
   (lambda (exp state)
     (cond
-      ; if we have a list at the beginning, need to recurse on both car and cdr
-      ((and (list? exp) (list? (keyword exp))) (M_state (cdr exp) (M_state (keyword exp) state)))
-      ; otherwise, match this expression to the type of expression and handle that with
-      ;   the appropriate function
-      ((eq? 'var (keyword exp)) (M_state_declare exp state))
+      ((null? exp) state)
+      ((and (list? exp) (list? (keyword exp)))
+      ; (display "\nexp")
+      ; (display exp)
+      ; (display "\ncar")
+      ; (display (car exp))
+      ; (display "\ncdr")
+      ; (display (cdr exp))
+      ; (display "\nEnd")
+       (M_state (cdr exp) (M_state (car exp) state)))
+       
+      ((eq? 'var (keyword exp))
+       (M_state_declare exp state))
       ((eq? '= (keyword exp)) (M_state_assign (cadr exp) (caddr exp) state))
       ((eq? 'if (keyword exp)) (M_state_if exp state))
       ((eq? 'while (keyword exp)) (M_state_while (cadr exp) (caddr exp) state))
       ((eq? 'return (keyword exp)) (M_value (cadr exp) state))
       (else ('error)))))
 
+; block statements
+(define (M_state_block ls state)
+  (remove-layer (M_state (cdr ls) (add-layer state)))) ;; dont show me the insides
+ ; (M_state (cdr ls) (add-layer state))) ;; show me the insides
+  
 
 ; assign (=) operation
 (define (M_state_assign var expr state)
