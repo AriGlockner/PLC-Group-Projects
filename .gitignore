@@ -5,7 +5,7 @@
 *.scm~
 *.scm#*
 .#*.scm
-compiled/drracket/errortrace/simpleParser_rkt.dep
+compiled/drracket/*
 *.dep
 *.zo
 *.rkt~
