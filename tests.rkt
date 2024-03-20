@@ -3,7 +3,10 @@
 (require "interpreter.rkt")
 (require "utils.rkt")
 (require "stateFunctions.rkt")
+(require "valueFunctions.rkt")
 (require rackunit)
+
+(define state '(((x y a) (5 12 true))))
 
 (check-equal? '() '())
 (check-equal? (interpret "test1.bad") 150)
@@ -74,3 +77,46 @@
 (check-equal? (M_state_assign 'x '(* 2 4) '(((x) (10)))) '(((x) (8))))
 (check-equal? (M_state_assign 'z 'x '(((z y x) (null 5 10)))) '(((z y x) (10 5 10))))
 (check-equal? (M_state_assign 'z '(* x y) '(((z y x) (null 5 10)))) '(((z y x) (50 5 10))))
+
+; declare tests
+; Test case: Declare a variable without an initial value
+(check-equal? (M_state_declare '(var newVar) state) '(((newVar x y a) (null 5 12 true))))
+; Test case: Declare a variable with an initial value
+(check-equal? (M_state_declare '(var anotherVar 42) state) '(((anotherVar x y a) (42 5 12 true))))
+; Test case: Declare a variable with an expression initial value
+(check-equal? (M_state_declare '(var exprVar (+ x y)) state) '(((exprVar x y a) (17 5 12 true))))
+
+; Declaration tests
+(check-equal? (M_state '(var foo) state) '(((foo x y a) (null 5 12 true))))
+(check-equal? (M_state '(var bar true) state) '(((bar x y a) (true 5 12 true))))
+
+; M_state_if tests
+(check-equal? (M_state_if '(if (< x y) (= x (+ x y))) state) '(((x y a) (17 12 true))))
+(check-equal? (M_state_if '(if (> x y) (= x (+ x y))) state) state)
+(check-equal? (M_state_if '(if (> x y) (= x (+ x y)) (= y (+ x y))) state) '(((x y a) (5 17 true))))
+(check-equal? (M_state_if '(if true (= x (+ x y)) (= y (+ x y))) state) '(((x y a) (17 12 true))))
+(check-equal? (M_state_if '(if false (= x (+ x y)) (= y (+ x y))) state) '(((x y a) (5 17 true))))
+(check-equal? (M_state_if '(if (&& a (|| true false)) (= x (+ x y)) (= y (+ x y))) state) '(((x y a) (17 12 true))))
+
+(check-equal? (M_state_if_1 '(> x y) '(= x (+ x y)) state) state)
+(check-equal? (M_state_if_1 '(< x y) '(= x (+ x y)) state) '(((x y a) (17 12 true))))
+(check-equal? (M_state_if_2 '(> x y) '(= x (+ x y)) '(= y (+ x y)) state) '(((x y a) (5 17 true))))
+
+; M_state_while tests
+(check-equal? (M_state_while '(!= (% y x) 3) '(= y (+ y 1)) state) '(((x y a) (5 13 true))))
+(check-equal? (M_state_while '(!= x 3) '(= x (- x 1)) state) '(((x y a) (3 12 true))))
+(check-equal? (M_state_while 'a '(= a (! a)) state) '(((x y a) (5 12 false))))
+
+; M_bool tests
+(check-equal? (M_bool '(> x 5) state) 'false)
+(check-equal? (M_bool '(< x 5) state) 'false)
+(check-equal? (M_bool '(>= x 5) state) 'true)
+(check-equal? (M_bool '(<= x 5) state) 'true)
+(check-equal? (M_bool '(== x 5) state) 'true)
+(check-equal? (M_bool '(!= x 5) state) 'false)
+
+; M_value tests
+(check-equal? (M_value '(true) state) 'true)
+(check-equal? (M_value 'true state) 'true)
+(check-equal? (M_value '(4) state) 4)
+(check-equal? (M_value '4 state) 4)
