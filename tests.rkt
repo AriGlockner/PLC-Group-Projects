@@ -51,6 +51,7 @@
 (check-equal? (lookup 'z '(((z) (1)) ((x a) (10 2)))) 1)
 (check-equal? (lookup 'z '(((z) (false)) ((x a) (10 2)))) 'false)
 (check-equal? (lookup 'x '(((z) (false)) ((x a) (10 2)))) 10)
+(check-equal? (lookup 'b '(((z) (false)) ((x a) (10 2)))) 'error)
 
 ; add-layer tests
 (check-equal? (add-layer '((() ()))) '((() ()) (() ())))
