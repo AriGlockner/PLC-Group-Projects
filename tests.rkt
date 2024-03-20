@@ -69,4 +69,6 @@
 (check-equal? (M_state_assign 'x 10 '(((x) (null)))) '(((x) (10))))
 (check-equal? (M_state_assign 'y 10 '(((x) (null)))) '(((y x) (10 null))))
 
+(display "Final test")
+(check-equal? (lookup 'b '(((z) (false)) ((x a) (10 2)))) 'error)
 
