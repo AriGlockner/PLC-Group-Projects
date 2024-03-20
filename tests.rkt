@@ -73,3 +73,4 @@
 (check-equal? (M_state_assign 'x '(* 2 4) '(((x) (10)))) '(((x) (8))))
 (check-equal? (M_state_assign 'z 'x '(((z y x) (null 5 10)))) '(((z y x) (10 5 10))))
 (check-equal? (M_state_assign 'z '(* x y) '(((z y x) (null 5 10)))) '(((z y x) (50 5 10))))
+

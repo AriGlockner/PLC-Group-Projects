@@ -28,7 +28,7 @@
 (define lookup
   (lambda (key state)
   (cond
-    ((null? state) (error "variable used before declared")) ; if state is empty
+    ((null? state) 'error) ; if state is empty
     ((list? (car state))
        (let ((result (lookup-helper (caar state) (cadar state) key)))
          (if (eq? result 'badday)
