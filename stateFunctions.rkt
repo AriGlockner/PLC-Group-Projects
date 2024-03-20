@@ -26,12 +26,10 @@
 (define (M_state_assign var expr state)
   (cond
     ((or (eq? (M_value expr state) 'error)) 'error)
-
     ((eq? (lookup var state) 'error) (add-binding var (M_value expr state))) ; if var is not in state
     (else
      (update-binding var (M_value expr state) state)
      )))
-
 
 ; handle if when we have 2 statements (then and else)
 (define (M_state_if_2 condition statement1 statement2 state)
