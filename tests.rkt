@@ -153,5 +153,19 @@
 (display "\n\nEnd of Ethan Tests \n\n")
 
 
-(M_state '(try body (catch (e) body) (finally body)) '(((x)(5))))
+
+;(M_state '(try body (catch (e) body) (finally body)) '(((x)(5))))
+
+
+;(M_state_try 'try 'e 'catch 'finally '(((x)(5))))
+
+
+
+
+(M_state_try '(= x 2) 'e '(= x 3) '(= x (+ x 1)) 'null '(((x)(1)))) ; expected '(((x) (3)))
+
+(M_state '((= x 2) (throw 10)) '(((x)(1))))
+
+
+(M_state_try '((= x 2) (throw 10)) 'e '(= x 3) '(= x (+ x 1)) 'null '(((x)(1)))) ; expected '(((x) (3)))
 

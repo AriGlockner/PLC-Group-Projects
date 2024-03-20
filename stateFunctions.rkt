@@ -6,6 +6,14 @@
 (require "valueFunctions.rkt")
 
 
+(define M_state_op
+  (lambda (exp state return next break continue throw)
+    (cond
+      ((null? exp) state)
+
+      (else
+       M_state_op exp state))))
+
 ; given an arbitrary expression, determine the state of the program after the expression
 (define M_state
   (lambda (exp state)
@@ -26,8 +34,15 @@
       ((eq? '= (keyword exp)) (M_state_assign (cadr exp) (caddr exp) state))
       ((eq? 'if (keyword exp)) (M_state_if exp state))
       ((eq? 'while (keyword exp)) (M_state_while (cadr exp) (caddr exp) state))
-      ((eq? 'try (keyword exp)) (M_state_try (cadr exp) (caddr exp) (cadddr exp) state))
+      
+      ((eq? 'try (keyword exp)) (M_state_try (cadr exp) (caadr (caddr exp)) (caddr (caddr exp)) (cadr (cadddr exp)) 'null state))
+      ((eq? 'throw (keyword exp))
+       (display "THROW ME THROW ME")
+       
+       )
+      
       ((eq? 'return (keyword exp)) (M_value (cadr exp) state))
+      ((eq? 'begin (keyword exp)) (M_state_block exp state))
       (else 'error))))
 
 ; block statements
@@ -90,17 +105,32 @@
           state)))
 
 
-(define (M_state_try body catch finally state)
+(define (M_state_try try e catch finally callback state)
   (cond
-    ((or (null? body) (null? catch) (null? finally)) 'error)
-
+    ((or (null? try) (null? catch) (null? finally) (null? e)) 'error)
+    ((and (eq? e callback) (not (eq? callback 'null))) ; if we get an result = e from try
+     (display "we got an error of type e")
+     (M_state finally (M_state catch (M_state try state))) ; do try and throw into catch and throw that into finally
+     )
+    
     (else
-     (display "\nbody")
-     (display body)
-     (display "\ncatch")
+     (display "\ntry: ")
+     (display try)
+     (display "\ne: ")
+     (display e)
+     (display "\ncatch: ")
      (display catch)
-     (display "\nfinally")
+     (display "\nfinally: ")
      (display finally)
+     (display "\nafter try: ")
+     (display (M_state try state))
+     (display "\nafter finally: ")
+     (M_state finally (M_state try state))
+     
+
+     
+     (M_state finally (M_state try state)) ; in the case we did not catch an error take what we got from try and run that in finally
+     
      
      )
  
