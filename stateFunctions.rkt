@@ -31,7 +31,11 @@
     ((null? exp)       (next state))
     ((null? (cdr exp)) (M_state_keyword_helper exp state next break continue))
     ;((not (list? (cadr exp))) (next (M_state_keyword_helper exp state next)))
-    ((list? (car exp)) (M_state_keyword_helper exp state (lambda (s) (M_state (cdr exp) s (lambda (v) v) (lambda (v) v) (lambda (v) v)))))
+    ((list? (car exp)) (display exp)
+                       (M_state_block (cons 'x exp) state next break continue))
+    ; ((list? (car exp)) (M_state_keyword_helper exp state (lambda (s) (M_state (cdr exp) s (lambda (v) v))) (lambda (v) v) (lambda (v) v)))
+                        
+
     (else (display "\nexp: ")(display exp)(display "\nstate: ")(display state)
       (M_state_keyword_helper exp state next break continue)
                        )))

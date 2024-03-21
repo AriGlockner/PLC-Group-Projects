@@ -138,4 +138,4 @@
 ; return tests
 (M_state '(return 6) '((() ())) (lambda (v) v) (lambda (v) v) (lambda (v) v))
 (M_state '(return x) '(((x) (5))) (lambda (v) v) (lambda (v) v) (lambda (v) v))
-
+(M_state '((= x 2) (+ x 1) (= x 9)) '(((x) (5))) (lambda (v) v) (lambda (v) v) (lambda (v) v))
