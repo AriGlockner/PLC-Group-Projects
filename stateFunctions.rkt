@@ -18,7 +18,7 @@
     ((eq? 'break (keyword exp)) (break state))
     ((eq? 'continue (keyword exp)) (continue state))
     ((eq? 'begin (keyword exp)) (M_state_block exp state next break continue))
-    ;((eq? 'try (keyword exp)) (M_state_try (cadr exp) (caadr (caddr exp)) (caddr (caddr exp)) (cadr (cadddr exp)) 'null state))
+    ((eq? 'try (keyword exp)) (M_state_try (cadr exp) (caadr (caddr exp)) (caddr (caddr exp)) (cadr (cadddr exp)) 'null state)) ; TODO: Update to match M_state_try
     (else 'error)))
 
 (define (M_state exp state next break continue)
@@ -130,6 +130,24 @@
 
 
 
+; try tryblock catch type var catchblock finally finallyblock state next break throw
 
+; catch (<type> <var>) --> <var> is the var in catch
+(define (M_state_try try catch finally state next break throw)
+  ; 1) Modify the next/break/throw continuations to execute the finally block 1st and then execute the continuation
+  (let ((newbreak (lambda (s1) (M_state finally s1 break break throw))) ; 
+        (newthrow (lambda (s1) (M_state finally s1 throw break throw)))
+        (newnext  (lambda (s1) (M_state finally s1 next  break throw)))
+        
+        ; 2) Create a new throw continuation that runs the catch block (and then the finally block) if an exception is thrown
+        (finallycont (lambda (s1)   (M_state finally s1 next break throw))))
+    (let ((mythrow     (lambda (e s1) (M_state catch (add-binding (cadr catch) e s1) finallycont newbreak newthrow)))
+        )
+    
+    ; 3) Execute the try block with the new continuations
+        ;(M_state_try try state finallycont newbreak mythrow)
+    (M_state try state finallycont newbreak mythrow)
+    ))
+  )
 
              
