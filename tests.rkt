@@ -58,13 +58,13 @@
 
 
 ; update-binding tests
-;(check-equal? (update-binding 'b 'true '(((b) (false)) ((z) (1)) ((x a) (10 2)))) '(((b) (true)) ((z) (1)) ((x a) (10 2))))
-;(check-equal? (update-binding 'z 3 '(((z) (1)) ((x a) (10 2)))) '(((z) (3)) ((x a) (10 2))))
-;(check-equal? (update-binding 'a 7 '(((x a) (10 2)))) '(((x a) (10 7))))
-;(check-equal? (update-binding 'x 12 '(((x) (10)))) '(((x) (12))))
-;(check-equal? (update-binding 'a 9 '(((z) (1)) ((x a) (10 2)))) '(((z) (1)) ((x a) (10 9))))
-;(check-exn
- ;  exn:fail? (lambda () (check-equal? (update-binding 'x 12 '(((a) (10)))) 'error)))
+(check-equal? (update-binding 'b 'true '(((b) (false)) ((z) (1)) ((x a) (10 2)))) '(((b) (true)) ((z) (1)) ((x a) (10 2))))
+(check-equal? (update-binding 'z 3 '(((z) (1)) ((x a) (10 2)))) '(((z) (3)) ((x a) (10 2))))
+(check-equal? (update-binding 'a 7 '(((x a) (10 2)))) '(((x a) (10 7))))
+(check-equal? (update-binding 'x 12 '(((x) (10)))) '(((x) (12))))
+(check-equal? (update-binding 'a 9 '(((z) (1)) ((x a) (10 2)))) '(((z) (1)) ((x a) (10 9))))
+(check-exn
+   exn:fail? (lambda () (check-equal? (update-binding 'x 12 '(((a) (10)))) 'error)))
 
 ; lookup tests
 (check-equal? (lookup 'x '(((x) (10)))) 10)
