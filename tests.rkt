@@ -59,10 +59,18 @@
 
 ; break tests
 
-; (check-equal? (M_state_while '(< x 9) '(begin (= x (+ x 1)) ) state (lambda (v) v)) '(((x y a) (9 12 true)))) 
+;(M_state_while '(< x 9) '(begin (= x (+ x 1)) (= y 8))  state (lambda (v) v)) ; '(((x y a) (9 8 true)))
+;(M_state_while '(< x 9) '(begin (= x (+ x 1)) (break) (= y 8))  state (lambda (v) v)) ; '(((x y a) (6 12 true)))
+
+;(M_state_if '(if (< x 9) (begin (= x (+ x 1)) (= y 8))) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) ; '(((x y a) (6 8 true)))
+;(M_state_if '(if (< x 9) (begin (= x (+ x 1)) (break) (= y 8))) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) ; ''(((x y a) (6 12 true)))
+
+
+; continue tests
 
 (M_state_while '(< x 9) '(begin (= x (+ x 1)) (= y 8))  state (lambda (v) v)) ; '(((x y a) (9 8 true)))
-(M_state_while '(< x 9) '(begin (= x (+ x 1)) (break) (= y 8))  state (lambda (v) v)) ; '(((x y a) (6 12 true)))
+(M_state_while '(< x 9) '(begin (= x (+ x 1)) (continue) (= y 8))  state (lambda (v) v)) ; '(((x y a) (9 12 true)))
 
-;(M_state_if '(if (< x 9) (begin (= x (+ x 1)) (= y 8))) state (lambda (v) v) (lambda (v) v))
-;(M_state_if '(if (< x 9) (begin (= x (+ x 1)) (break) (= y 8))) state (lambda (v) v) (lambda (v) v))
+(M_state_if '(if (< x 9) (begin (= x (+ x 1)) (= y 8))) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) ; '(((x y a) (6 8 true)))
+(M_state_if '(if (< x 9) (begin (= x (+ x 1)) (continue) (= y 8))) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) ; '(((x y a) (6 12 true)))
+
