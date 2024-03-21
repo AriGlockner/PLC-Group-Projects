@@ -16,12 +16,16 @@
 ; putting it all together, take a filename, parse the file, and interpret the results
 (define interpret
   (lambda (filename)
+    (call/cc (lambda (ret) 
     (cond
       ((string=? filename "") (error "need a non-empty filename"))
       (else
+       
        (let* ((expressions (parser filename))
-              (final-state (foldl (lambda (exp state) (M_state exp state (lambda (v) v) (lambda (v) v) (lambda (v) v))) '() expressions)))
-         final-state)))))
+              (final-state (foldl (lambda (exp state) (M_state exp state ret (lambda (v) v) (lambda (v) v) (lambda (v) v))) '() expressions)))
+         final-state)
+       
+       ))))))
 
 
 ;(M_state '(var foo) state)
