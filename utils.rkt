@@ -29,7 +29,10 @@
   (lambda (key state)
   (cond
     ((null? state) 'error) ; if state is empty
+  ;  ((number? state) (display state))
     ((list? (car state))
+   ;  (display key)
+    ; (display state)
        (let ((result (lookup-helper (caar state) (cadar state) key)))
          (if (eq? result 'badday)
              (lookup key (cdr state)) ; continue searching the rest of the state

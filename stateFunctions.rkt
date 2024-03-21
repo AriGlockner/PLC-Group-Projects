@@ -14,7 +14,12 @@
     ((eq? '= (keyword exp)) (M_state_assign (cadr exp) (caddr exp) state next))
     ((eq? 'if (keyword exp)) (M_state_if exp state next break continue))
     ((eq? 'while (keyword exp)) (M_state_while (cadr exp) (caddr exp) state next))
-    ((eq? 'return (keyword exp)) (M_value (cadr exp) state))
+    ((eq? 'return (keyword exp)) (display "WE ARE RETURNING") (display (M_value (cadr exp) state))
+                                 
+
+                                 (M_value (cadr exp) state)
+                                 
+                                 )
     ((eq? 'break (keyword exp)) (break state))
     ((eq? 'continue (keyword exp)) (continue state))
     ((eq? 'begin (keyword exp)) (M_state_block exp state next break continue))
@@ -27,8 +32,9 @@
     ((null? (cdr exp)) (M_state_keyword_helper exp state next break continue))
     ;((not (list? (cadr exp))) (next (M_state_keyword_helper exp state next)))
     ((list? (car exp)) (M_state_keyword_helper exp state (lambda (s) (M_state (cdr exp) s (lambda (v) v) (lambda (v) v) (lambda (v) v)))))
-    (else              (M_state_keyword_helper exp state next break continue))))
-
+    (else (display "\nexp: ")(display exp)(display "\nstate: ")(display state)
+      (M_state_keyword_helper exp state next break continue)
+                       )))
 
 
 ; block statements
