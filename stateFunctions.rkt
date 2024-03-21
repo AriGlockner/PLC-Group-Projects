@@ -7,7 +7,7 @@
 
 
 ; given an arbitrary expression, determine the state of the program after the expression
-(define (M_state_keyword_helper exp state next)
+(define (M_state_keyword_helper exp state next break)
   (cond
     ((eq? 'var (keyword exp))
        (M_state_declare exp state next))
@@ -15,32 +15,33 @@
     ((eq? 'if (keyword exp)) (M_state_if exp state next))
     ((eq? 'while (keyword exp)) (M_state_while (cadr exp) (caddr exp) state next))
     ((eq? 'return (keyword exp)) (M_value (cadr exp) state))
-    ((eq? 'begin (keyword exp)) (M_state_block exp state next))
+    ((eq? 'break (keyword exp)) (break state))
+    ((eq? 'begin (keyword exp)) (M_state_block exp state next break))
     ;((eq? 'try (keyword exp)) (M_state_try (cadr exp) (caadr (caddr exp)) (caddr (caddr exp)) (cadr (cadddr exp)) 'null state))
     (else 'error)))
 
-(define (M_state exp state next)
+(define (M_state exp state next break)
   (cond
     ((null? exp)       (next state))
-    ((null? (cdr exp)) (M_state_keyword_helper exp state next))
+    ((null? (cdr exp)) (M_state_keyword_helper exp state next break))
     ;((not (list? (cadr exp))) (next (M_state_keyword_helper exp state next)))
-    ((list? (car exp)) (M_state_keyword_helper exp state (lambda (s) (M_state (cdr exp) s (lambda (v) v)))))
-    (else              (M_state_keyword_helper exp state next))))
+    ((list? (car exp)) (M_state_keyword_helper exp state (lambda (s) (M_state (cdr exp) s (lambda (v) v) (lambda (v) v)))))
+    (else              (M_state_keyword_helper exp state next break))))
 
 
 
 ; block statements
-(define (M_state_block ls state next)
-  (M_statementlist (cdr ls) (add-layer state) (lambda (st) (next (remove-layer st)))))
+(define (M_state_block ls state next break)
+  (M_statementlist (cdr ls) (add-layer state) (lambda (st) (next (remove-layer st))) (lambda (st) (break (remove-layer st)))))
  ; (remove-layer (M_state (cdr ls) (add-layer state) next))) ;; dont show me the insides
  ; (M_state (cdr ls) (add-layer state))) ;; show me the insides
 
 
 (define M_statementlist
-  (lambda (stmts state next)
+  (lambda (stmts state next break)
     (if (null? stmts)
         (next state)
-        (M_state (car stmts) state (lambda (nstate) (M_statementlist (cdr stmts) nstate next)))
+        (M_state (car stmts) state (lambda (nstate) (M_statementlist (cdr stmts) nstate next break)) break)
         )))
 
 ; assign (=) operation
@@ -53,35 +54,35 @@
      )))
 
 ; handle if when we have 2 statements (then and else)
-(define (M_state_if_2 condition statement1 statement2 state next)
+(define (M_state_if_2 condition statement1 statement2 state next break)
   (if (eq? (M_bool condition state) 'error)
       'error
       (if (eq? (M_bool condition state) 'true)
-          (M_state statement1 state next)
-          (M_state statement2 state next))))
+          (M_state statement1 state next break)
+          (M_state statement2 state next break))))
 
 ; handles if when we only have 1 statement
-(define (M_state_if_1 condition statement1 state next)
+(define (M_state_if_1 condition statement1 state next break)
   (if (eq? (M_bool condition state) 'error)
       'error
       (if (eq? (M_bool condition state) 'true)
-          (M_state statement1 state next)
+          (M_state statement1 state next break)
           (next state)))) ; return the current state if the condition is false
 
 ; if operation
-(define (M_state_if exp state next)
+(define (M_state_if exp state next break)
   (cond
     ((eq? (length exp) 3)
      (let* ((condition (cadr exp))
             (statement1 (caddr exp)))
-       (M_state_if_1 condition statement1 state next)))
+       (M_state_if_1 condition statement1 state next break)))
     ((eq? (length exp) 4)
      (let* ((condition (cadr exp))
             (statement1 (caddr exp))
             (statement2 (cadddr exp)))
        (if (eq? statement2 #f)  
-           (M_state_if_1 condition statement1 state next)
-           (M_state_if_2 condition statement1 statement2 state next))))
+           (M_state_if_1 condition statement1 state next break)
+           (M_state_if_2 condition statement1 statement2 state next break))))
     (else 'error)))
 
 
