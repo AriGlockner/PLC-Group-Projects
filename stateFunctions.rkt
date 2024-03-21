@@ -30,13 +30,6 @@
 
 
 ; block statements
-(define (M_state_block-old ls state next)
-  (remove-layer (M_state (cdr ls) (add-layer state) next))) ;; dont show me the insides
- ; (M_state (cdr ls) (add-layer state))) ;; show me the insides
-  
-
-
-; block statements
 (define (M_state_block ls state next)
   (M_statementlist (cdr ls) (add-layer state) (lambda (st) (next (remove-layer st)))))
  ; (remove-layer (M_state (cdr ls) (add-layer state) next))) ;; dont show me the insides
@@ -91,14 +84,6 @@
            (M_state_if_2 condition statement1 statement2 state next))))
     (else 'error)))
 
-; old while 
-(define (M_state_while_old condition statement state next)
-  (if (or (eq? (M_bool condition state) 'error)
-          (eq? (M_state statement state) 'error))
-      'error
-      (if (eq? (M_bool condition state) 'true)
-          (M_state_while condition statement (M_state statement state))
-          state)))
 
 ; while operation
 (define (M_state_while condition statement state next)
