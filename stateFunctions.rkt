@@ -87,13 +87,40 @@
 
 
 ; while operation
-(define (M_state_while condition statement state next)
+(define (M_state_while-old condition statement state next)
   (if (or (eq? (M_bool condition state) 'error)
           (eq? (M_state statement state next) 'error))
       'error
       (if (eq? (M_bool condition state) 'true)
           (M_state_while condition statement (M_state statement state next) next)
           state)))
+
+
+; while operation
+(define (M_state_while condition statement state next)
+  ;; (if (or (eq? (M_bool condition state) 'error)
+     ;;     (eq? (M_state statement state next ) 'error))
+;;       'error
+
+      (loop condition statement state next)
+      
+;      (if (eq? (M_bool condition state) 'true)
+;          (M_state_while condition statement (M_state statement state))
+;          state
+          )
+
+(define (loop condition statement state next)
+  (if (eq? (M_bool condition state) 'true)
+      ; Loop
+     ; (let ((repeat (lambda (s1) (loop condition statement s1 next))))
+      (M_state statement state
+               (lambda (s1) (loop condition statement s1 next))
+               (lambda (s1) (next s1))
+               )
+      ; Break 
+      (next state)
+      ))
+
 
 ; declare (var) operation
 (define (M_state_declare expr state next)
