@@ -15,7 +15,7 @@
     ((eq? 'if (keyword exp)) (M_state_if exp state next))
     ((eq? 'while (keyword exp)) (M_state_while (cadr exp) (caddr exp) state next))
     ((eq? 'return (keyword exp)) (M_value (cadr exp) state))
-    ((eq? 'begin (keyword exp)) (M_state_block exp state))
+    ((eq? 'begin (keyword exp)) (M_state_block exp state next))
     ;((eq? 'try (keyword exp)) (M_state_try (cadr exp) (caadr (caddr exp)) (caddr (caddr exp)) (cadr (cadddr exp)) 'null state))
     (else 'error)))
 
@@ -30,10 +30,25 @@
 
 
 ; block statements
-(define (M_state_block ls state)
-  (remove-layer (M_state (cdr ls) (add-layer state)))) ;; dont show me the insides
+(define (M_state_block-old ls state next)
+  (remove-layer (M_state (cdr ls) (add-layer state) next))) ;; dont show me the insides
  ; (M_state (cdr ls) (add-layer state))) ;; show me the insides
   
+
+
+; block statements
+(define (M_state_block ls state next)
+  (M_statementlist (cdr ls) (add-layer state) (lambda (st) (next (remove-layer st)))))
+ ; (remove-layer (M_state (cdr ls) (add-layer state) next))) ;; dont show me the insides
+ ; (M_state (cdr ls) (add-layer state))) ;; show me the insides
+
+
+(define M_statementlist
+  (lambda (stmts state next)
+    (if (null? stmts)
+        (next state)
+        (M_state (car stmts) state (lambda (nstate) (M_statementlist (cdr stmts) nstate next)))
+        )))
 
 ; assign (=) operation
 (define (M_state_assign var expr state next)
@@ -76,13 +91,22 @@
            (M_state_if_2 condition statement1 statement2 state next))))
     (else 'error)))
 
-; while operation
-(define (M_state_while condition statement state next)
+; old while 
+(define (M_state_while_old condition statement state next)
   (if (or (eq? (M_bool condition state) 'error)
           (eq? (M_state statement state) 'error))
       'error
       (if (eq? (M_bool condition state) 'true)
           (M_state_while condition statement (M_state statement state))
+          state)))
+
+; while operation
+(define (M_state_while condition statement state next)
+  (if (or (eq? (M_bool condition state) 'error)
+          (eq? (M_state statement state next) 'error))
+      'error
+      (if (eq? (M_bool condition state) 'true)
+          (M_state_while condition statement (M_state statement state next) next)
           state)))
 
 ; declare (var) operation
