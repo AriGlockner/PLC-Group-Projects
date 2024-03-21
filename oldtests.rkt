@@ -64,18 +64,18 @@
 ;(check-equal? (M_state '(var bar true) state (lambda (v) v)) '(((bar x y a) (true 5 12 true))))
 
 ; M_state_if tests
-(check-equal? (M_state_if '(if (< x y) (= x (+ x y))) state (lambda (v) v)) '(((x y a) (17 12 true))))
-(check-equal? (M_state_if '(if (> x y) (= x (+ x y))) state (lambda (v) v)) state)
-(check-equal? (M_state_if '(if (> x y) (= x (+ x y)) (= y (+ x y))) state (lambda (v) v)) '(((x y a) (5 17 true))))
-(check-equal? (M_state_if '(if true (= x (+ x y)) (= y (+ x y))) state (lambda (v) v)) '(((x y a) (17 12 true))))
-(check-equal? (M_state_if '(if false (= x (+ x y)) (= y (+ x y))) state (lambda (v) v)) '(((x y a) (5 17 true))))
-(check-equal? (M_state_if '(if (&& a (|| true false)) (= x (+ x y)) (= y (+ x y))) state (lambda (v) v)) '(((x y a) (17 12 true))))
+(check-equal? (M_state_if '(if (< x y) (= x (+ x y))) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((x y a) (17 12 true))))
+(check-equal? (M_state_if '(if (> x y) (= x (+ x y))) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) state)
+(check-equal? (M_state_if '(if (> x y) (= x (+ x y)) (= y (+ x y))) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((x y a) (5 17 true))))
+(check-equal? (M_state_if '(if true (= x (+ x y)) (= y (+ x y))) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((x y a) (17 12 true))))
+(check-equal? (M_state_if '(if false (= x (+ x y)) (= y (+ x y))) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((x y a) (5 17 true))))
+(check-equal? (M_state_if '(if (&& a (|| true false)) (= x (+ x y)) (= y (+ x y))) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((x y a) (17 12 true))))
 
-(check-equal? (M_state_if_1 '(> x y) '(= x (+ x y)) state (lambda (v) v)) state)
-(check-equal? (M_state_if_1 '(< x y) '(= x (+ x y)) state (lambda (v) v)) '(((x y a) (17 12 true))))
-(check-equal? (M_state_if_2 '(> x y) '(= x (+ x y)) '(= y (+ x y)) state (lambda (v) v)) '(((x y a) (5 17 true))))
+(check-equal? (M_state_if_1 '(> x y) '(= x (+ x y)) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) state)
+(check-equal? (M_state_if_1 '(< x y) '(= x (+ x y)) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((x y a) (17 12 true))))
+(check-equal? (M_state_if_2 '(> x y) '(= x (+ x y)) '(= y (+ x y)) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((x y a) (5 17 true))))
 
- (check-equal? (M_state_if '(if (< x 9) (begin (= x (+ x 1)))) state (lambda (v) v)) '(((x y a) (6 12 true)))) ;; error
+ (check-equal? (M_state_if '(if (< x 9) (begin (= x (+ x 1)))) state (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((x y a) (6 12 true)))) ;; error
 
 
 ; M_state_while tests
@@ -101,10 +101,10 @@
 (check-equal? (M_value '4 state) 4)
 
 ; test cases for M_state_block
-(check-equal? (M_state_block '(begin (var y 2) (= x y)) '(((x) (10))) (lambda (v) v)) '(((x) (2))))
-(check-equal? (M_state_block '(begin (var y 2) (var z (* x y)) (= x z)) '(((x) (10))) (lambda (v) v)) '(((x) (20))))
-(check-equal? (M_state_block '(begin (var temp a) (= a b) (= b temp)) '(((b a) (1476 31160))) (lambda (v) v)) '(((b a) (31160 1476))))
-(check-equal? (M_state_block '(begin (= a b) (= b r) (= r (% a b))) '(((r b a) (1 2 3))) (lambda (v) v)) '(((r b a) (0 1 2))))
+(check-equal? (M_state_block '(begin (var y 2) (= x y)) '(((x) (10))) (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((x) (2))))
+(check-equal? (M_state_block '(begin (var y 2) (var z (* x y)) (= x z)) '(((x) (10))) (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((x) (20))))
+(check-equal? (M_state_block '(begin (var temp a) (= a b) (= b temp)) '(((b a) (1476 31160))) (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((b a) (31160 1476))))
+(check-equal? (M_state_block '(begin (= a b) (= b r) (= r (% a b))) '(((r b a) (1 2 3))) (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((r b a) (0 1 2))))
 
 ; return tests
 ;(M_state '(return 6) '((() ())) (lambda (v) v))
