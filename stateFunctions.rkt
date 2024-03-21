@@ -12,7 +12,7 @@
     ((eq? 'var (keyword exp))
        (M_state_declare exp state next))
     ((eq? '= (keyword exp)) (M_state_assign (cadr exp) (caddr exp) state next))
-    ((eq? 'if (keyword exp)) (M_state_if exp state next continue))
+    ((eq? 'if (keyword exp)) (M_state_if exp state next break continue))
     ((eq? 'while (keyword exp)) (M_state_while (cadr exp) (caddr exp) state next))
     ((eq? 'return (keyword exp)) (M_value (cadr exp) state))
     ((eq? 'break (keyword exp)) (break state))
