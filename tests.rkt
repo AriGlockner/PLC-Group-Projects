@@ -94,19 +94,19 @@
 (check-equal? (add-binding 'b 'false '((() ()) ((z) (1)) ((x a) (10 2)))) '(((b) (false)) ((z) (1)) ((x a) (10 2))))
 
 ; assign tests
-(check-equal? (M_state '(= x 10) '(((x) (null)))) '(((x) (10))))
-(check-equal? (M_state_assign 'x 10 '(((x) (null)))) '(((x) (10))))
-(check-equal? (M_state_assign 'x '(* 2 4) '(((x) (10)))) '(((x) (8))))
-(check-equal? (M_state_assign 'z 'x '(((z y x) (null 5 10)))) '(((z y x) (10 5 10))))
-(check-equal? (M_state_assign 'z '(* x y) '(((z y x) (null 5 10)))) '(((z y x) (50 5 10))))
+(check-equal? (M_state '(= x 10) '(((x) (null))) (lambda (v) v)) '(((x) (10))))
+(check-equal? (M_state_assign 'x 10 '(((x) (null))) (lambda (v) v)) '(((x) (10))))
+(check-equal? (M_state_assign 'x '(* 2 4) '(((x) (10))) (lambda (v) v)) '(((x) (8))))
+(check-equal? (M_state_assign 'z 'x '(((z y x) (null 5 10))) (lambda (v) v)) '(((z y x) (10 5 10))))
+(check-equal? (M_state_assign 'z '(* x y) '(((z y x) (null 5 10))) (lambda (v) v)) '(((z y x) (50 5 10))))
 
 ; declare tests
 ; Test case: Declare a variable without an initial value
-(check-equal? (M_state_declare '(var newVar) state) '(((newVar x y a) (null 5 12 true))))
+(check-equal? (M_state_declare '(var newVar) state (lambda (v) v)) '(((newVar x y a) (null 5 12 true))))
 ; Test case: Declare a variable with an initial value
-(check-equal? (M_state_declare '(var anotherVar 42) state) '(((anotherVar x y a) (42 5 12 true))))
+(check-equal? (M_state_declare '(var anotherVar 42) state (lambda (v) v)) '(((anotherVar x y a) (42 5 12 true))))
 ; Test case: Declare a variable with an expression initial value
-(check-equal? (M_state_declare '(var exprVar (+ x y)) state) '(((exprVar x y a) (17 5 12 true))))
+(check-equal? (M_state_declare '(var exprVar (+ x y)) state (lambda (v) v)) '(((exprVar x y a) (17 5 12 true))))
 
 ; Declaration tests
 (check-equal? (M_state '(var foo) state) '(((foo x y a) (null 5 12 true))))
@@ -154,3 +154,5 @@
 (check-equal? (M_state_block '(begin (var temp a) (= a b) (= b temp)) '(((b a) (1476 31160)))) '(((b a) (31160 1476))))
 (check-equal? (M_state_block '(begin (= a b) (= b r) (= r (% a b))) '(((r b a) (1 2 3)))) '(((r b a) (0 1 2))))
 
+; return tests
+(M_state '(return 6) '((() ())) (lambda (v) v))
