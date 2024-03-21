@@ -124,7 +124,7 @@
 (check-equal? (M_state_if_1 '(< x y) '(= x (+ x y)) state (lambda (v) v)) '(((x y a) (17 12 true))))
 (check-equal? (M_state_if_2 '(> x y) '(= x (+ x y)) '(= y (+ x y)) state (lambda (v) v)) '(((x y a) (5 17 true))))
 
-;; (check-equal? (M_state_if '(if '(< x 9) '(begin (= x (+ x 1)))) state (lambda (v) v)) '(((x y a) (6 12 true)))) ;; error
+ (check-equal? (M_state_if '(if (< x 9) (begin (= x (+ x 1)))) state (lambda (v) v)) '(((x y a) (6 12 true)))) ;; error
 
 
 ; M_state_while tests
