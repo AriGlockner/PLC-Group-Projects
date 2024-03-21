@@ -20,7 +20,7 @@
       ((string=? filename "") (error "need a non-empty filename"))
       (else
        (let* ((expressions (parser filename))
-              (final-state (foldl (lambda (exp state) (M_state exp state)) '() expressions)))
+              (final-state (foldl (lambda (exp state) (M_state exp state (lambda (v) v) (lambda (v) v) (lambda (v) v))) '() expressions)))
          final-state)))))
 
 
