@@ -56,25 +56,22 @@
         null
         (cdr layers))))
 
-
+; Delete the layer
 (define remove-layer
   (lambda (layers)
     (cond
       ((null? layers) null)
       (else
        (cdr layers)))))
-    
 
 ; Add Binding to the state
 (define add-binding
   (lambda (name value state)
-  (cond
-      ((null? state) (list (cons (list name) (list (list value)))))
-      (else
-       (cons (cons (cons name (caar state)) (list (cons value (cadar state)))) (cdr state)) 
-       ))))
-       
+  (if (null? state)
+      (list (cons (list name) (list (list value))))
+      (cons (cons (cons name (caar state)) (list (cons value (cadar state)))) (cdr state)))))
 
+; Add the name/value to the layer
 (define add-to-layer
   (lambda (name value layer)
     (list
@@ -100,7 +97,6 @@
              (cons result (cdr state))))) ; return the value if found
     (else (error "state is bad")))))
 
-
 (define update-binding-helper
   (lambda (vars keys value newvalue return)
     (cond
@@ -114,7 +110,6 @@
                               (lambda (r-vars r-keys status)
                                 (return (cons (car vars) r-vars) (cons (car keys) r-keys) status)))))))
 
-
 ; verify the state has multiple layers
 (define check_break
   (lambda (state)
@@ -122,7 +117,6 @@
       ((null? state) 'error) ; state has no layers
       ((null? (cdr state)) 'error) ; state is only one layer
       (else state)))) ;; state has multiple layers
-
 
 ; add 'begin to try
 (define add_begin_try
