@@ -1,7 +1,6 @@
 #lang racket
 
 (provide (all-defined-out))
-
 (require "utils.rkt")
 
 ; (<op> <int exp> <int exp>) OR (<op> <int exp>)
@@ -22,7 +21,6 @@
     ((eq? (operator ls) '%) (remainder (M_int (leftoperand ls) state return)
                                        (M_int (rightoperand ls) state return)))
     (else                   'error)))
-
 
 ;(<op> <bool exp> <bool exp>) OR (<op> <bool exp>)
 (define (M_bool ls state return)

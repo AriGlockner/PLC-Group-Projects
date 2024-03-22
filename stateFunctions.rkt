@@ -32,11 +32,8 @@
                      (next (remove-layer state))))
     ((null? exp)       (next state))
     ((null? (cdr exp)) (M_state_keyword_helper exp state return next break continue throw))
-    ;((not (list? (cadr exp))) (next (M_state_keyword_helper exp state next)))
     ((list? (car exp)) (M_state_keyword_helper exp state return (lambda (s) (M_state (cdr exp) s return (lambda (v) v) (lambda (v) v) (lambda (v) v) throw)) break continue throw))
     (else              (M_state_keyword_helper exp state return next break continue throw))))
-
-
 
 ; block statements
 (define (M_state_block ls state return next break continue throw)
@@ -46,10 +43,7 @@
                 (lambda (s) (next (remove-layer s)))
                 (lambda (s) (break (remove-layer s)))
                 (lambda (s) (continue (remove-layer s)))
-                (lambda (exception s) (throw exception (remove-layer s)))
-                ))
- ; (remove-layer (M_state (cdr ls) (add-layer state) next))) ;; dont show me the insides
- ; (M_state (cdr ls) (add-layer state))) ;; show me the insides
+                (lambda (exception s) (throw exception (remove-layer s)))))
 
 ; try catch finally
 (define M_state_try
@@ -65,7 +59,6 @@
            )
     (M_state_block try_exp state new_return new_next new_break new_continue new_throw))))
           
-
 ; helper function for when we see throw inside a try (so we can move to catch)
 (define throw-helper
   (lambda (exp state return next break continue throw finally)
@@ -77,11 +70,10 @@
                              (caddr exp) ; catch expression/block
                              (add-binding (caadr exp) exception (add-layer curr_state)) ; bind the catch variable to the thrown exception value
                              return
-                             (lambda (new_state) (M_state_block finally (remove-layer new_state) return next break continue throw)) ; next
-                             (lambda (new_state) (break (remove-layer new_state))) ; break
-                             (lambda (new_state) (continue (remove-layer new_state))) ; continue
-                             (lambda (new_exception new_state) (throw new_exception (remove-layer new_state))
-                             )))))))
+                             (lambda (new_state) (M_state_block finally (remove-layer new_state) return next break continue throw))
+                             (lambda (new_state) (break (remove-layer new_state)))
+                             (lambda (new_state) (continue (remove-layer new_state)))
+                             (lambda (new_exception new_state) (throw new_exception (remove-layer new_state)))))))))
 
 ; deal with an expression formatted as a list of statements
 (define M_statements
@@ -91,17 +83,13 @@
       (else (M_state (car exp) state return
                  (lambda (new_state)
                    (M_statements (cdr exp) new_state return next break continue throw))
-                 break continue throw)
-            ))))
+                 break continue throw)))))
 
 ; assign (=) operation
 (define (M_state_assign var expr state return next)
-  (cond
-    ((or (eq? (M_value expr state return) 'error)) 'error)
-   ; ((eq? (lookup var state) 'error) (next (add-binding var (M_value expr state return) state))) ; if var is not in state ; REMOVED
-    (else
-     (next (update-binding var (M_value expr state return) state))
-     )))
+  (if (or (eq? (M_value expr state return) 'error))
+      'error
+      (next (update-binding var (M_value expr state return) state))))
 
 ; handle if when we have 2 statements (then and else)
 (define (M_state_if_2 condition statement1 statement2 state return next break continue throw)
@@ -135,8 +123,6 @@
            (M_state_if_2 condition statement1 statement2 state return next break continue throw))))
     (else 'error)))
 
-
-
 ; while operation
 (define (M_state_while condition statement state return next throw)
       (loop condition statement state return next throw))
@@ -153,7 +139,6 @@
       (next state)
       ))
 
-
 ; declare (var) operation
 (define (M_state_declare expr state return next)
   (let ((var (cadr expr)))
@@ -162,9 +147,4 @@
         (if (null? (rightside expr))
             (let* ((s1 (add-binding var 'null state))) (next s1))
             (let* ((s1 (add-binding var (M_value (car (rightside expr)) state return) state))) (next s1))))))
-
-
-
-
-
              
