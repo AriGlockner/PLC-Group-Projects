@@ -81,17 +81,15 @@
       ((null? exp) (lambda (e st) (M_state_block finally state return (lambda (st) (throw e st)) break continue throw)))
       ((not (eq? (car exp) 'catch)) (error "bad catch"))
       (else
-       (lambda (e st) (M_statementlist
+       (lambda (exception curr_state) (M_statementlist
                              (caddr exp)
-                             (M_state_assign (caadr exp) e (add-layer state) return next)
+                             (add-binding (caadr exp) exception (add-layer state))
                              return
                              (lambda (new_state) (M_state_block finally (remove-layer new_state) return next break continue throw))
                              (lambda (new_state) (break (remove-layer new_state)))
                              (lambda (new_state) (continue (remove-layer new_state)))
-                             (lambda (e1 new_state)
-                           ;    (display "\nyo: ")
-                            ;   (display st1))
-                               (throw e1 (remove-layer new_state)))
+                             (lambda (new_exception new_state)
+                               (throw new_exception (remove-layer new_state)))
                              ))))))
 
 ; statement list
@@ -107,7 +105,7 @@
 (define (M_state_assign var expr state return next)
   (cond
     ((or (eq? (M_value expr state return) 'error)) 'error)
-    ((eq? (lookup var state) 'error) (next (add-binding var (M_value expr state return) state))) ; if var is not in state
+   ; ((eq? (lookup var state) 'error) (next (add-binding var (M_value expr state return) state))) ; if var is not in state ; REMOVED
     (else
      (next (update-binding var (M_value expr state return) state))
      )))

@@ -21,21 +21,22 @@
 (check-equal? (interpret "tests/test8.bad") 10)
 (check-equal? (interpret "tests/test9.bad") 5)
 (check-equal? (interpret "tests/test10.bad") -39)
-;(check-exn
-;   exn:fail? (lambda () (interpret "tests/test11.bad")))
+(check-exn
+   exn:fail? (lambda () (interpret "tests/test11.bad")))
 (check-equal? (interpret "tests/test12.bad") 'error)
-;(check-exn
-;   exn:fail? (lambda () (interpret "tests/test12.bad")))
+;(check-exn ;; now returns 'error instead of actualling erroring
+;   exn:fail? (lambda () (interpret "tests/test12.bad"))) 
 (check-exn
    exn:fail? (lambda () (interpret "tests/test13.bad")))
-;(check-exn
-;   exn:fail? (lambda () (interpret "tests/test14.bad")))
+;;(check-exn ;; not a required error
+;;   exn:fail? (lambda () (interpret "tests/test14.bad")))
 (check-equal? (interpret "tests/test15.bad") 'true)
 (check-equal? (interpret "tests/test16.bad") 100)
 (check-equal? (interpret "tests/test17.bad") 'false)
 (check-equal? (interpret "tests/test18.bad") 'true)
 (check-equal? (interpret "tests/test19.bad") 128)
 (check-equal? (interpret "tests/test20.bad") 12)
+
 
 
 ; update-binding tests
@@ -137,6 +138,5 @@
 (check-equal? (M_state_block '(begin (= a b) (= b r) (= r (% a b))) '(((r b a) (1 2 3))) (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((r b a) (0 1 2))))
 
 ; return tests
-;(M_state '(return 6) '((() ()))  (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v))
-;(M_state '(return x) '(((x) (5)))  (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v))
-;;; (M_state '((= x 2) (+ x 1) (= x 9)) '(((x) (5))) (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v)) ; FAIL
+(check-equal? (M_state '(return 6) '((() ()))  (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v)) 6)
+(check-equal? (M_state '(return x) '(((x) (5))) (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v)) 5)
