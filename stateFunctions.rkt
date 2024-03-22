@@ -77,16 +77,11 @@
                              (caddr exp) ; catch expression/block
                              (add-binding (caadr exp) exception (add-layer state)) ; bind the catch variable to the thrown exception value
                              return
-                             (lambda (new_state) (M_state_block finally (remove-layer new_state) return next break continue throw))
-                             (lambda (new_state) (break (remove-layer new_state)))
-                             (lambda (new_state) (continue (remove-layer new_state)))
-                             (lambda (new_exception new_state)
-                               (with-handlers
-                                   ((exn:fail? (lambda (exn)
-                                'error))) ; for test 19. if we get an error here return error
-                               (throw new_exception (remove-layer new_state))
-                               ))
-                             ))))))
+                             (lambda (new_state) (M_state_block finally (remove-layer new_state) return next break continue throw)) ; next
+                             (lambda (new_state) (break (remove-layer new_state))) ; break
+                             (lambda (new_state) (continue (remove-layer new_state))) ; continue
+                             (lambda (new_exception new_state) (throw new_exception (remove-layer new_state))
+                             )))))))
 
 ; deal with many statements 
 (define M_statements
