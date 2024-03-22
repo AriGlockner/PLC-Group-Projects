@@ -29,7 +29,11 @@
 (check-equal? (interpret "tests/p2_t18.bad") 101)
 (check-equal? (interpret "tests/p2_t19.bad") 'error)
 
-;(interpret "tests/p2_t17.bad")
+;; optional extra
+;; (check-equal? (interpret "tests/p2_t20.bad") 21) ; fail but optional
+
+
+(interpret "tests/p2_t17.bad")
 
 
 ; break tests
