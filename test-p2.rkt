@@ -21,7 +21,7 @@
 (check-equal? (interpret "tests/p2_t10.bad") 789)
 (check-equal? (interpret "tests/p2_t11.bad") 'error)
 (check-equal? (interpret "tests/p2_t12.bad") 'error)
-;(check-equal? (interpret "tests/p2_t13.bad") 'error) ; fail
+(check-equal? (interpret "tests/p2_t13.bad") 'error)
 (check-equal? (interpret "tests/p2_t14.bad") 12)
 ;(check-equal? (interpret "tests/p2_t15.bad") 125) ; fail
 ;(check-equal? (interpret "tests/p2_t16.bad") 110) ; fail

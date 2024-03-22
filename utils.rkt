@@ -50,11 +50,20 @@
     (combine empty-layer layers)))
 
 ; Removes the 1st layer from the front of the list of layers
-(define remove-layer
+(define remove-layer-old
   (lambda (layers)
     (if (null? layers)
         null
         (cdr layers))))
+
+
+(define remove-layer
+  (lambda (layers)
+    (cond
+      ((null? layers) null)
+      (else
+       (cdr layers)))))
+    
 
 ; Add Binding to the state
 (define add-binding

@@ -5,6 +5,14 @@
 (require "utils.rkt")
 (require "valueFunctions.rkt")
 
+; verify the state has multiple layers
+(define check_break
+  (lambda (state)
+    (cond
+      ((null? state) 'error) ; state has no layers
+      ((null? (cdr state)) 'error) ; state is only one layer
+      (else state)))) ;; state has multiple layers
+
 
 ; given an arbitrary expression, determine the state of the program after the expression
 (define (M_state_keyword_helper exp state return next break continue throw)
@@ -15,7 +23,7 @@
     ((eq? 'if (keyword exp)) (M_state_if exp state return next break continue throw))
     ((eq? 'while (keyword exp)) (M_state_while (cadr exp) (caddr exp) state return next throw))
     ((eq? 'return (keyword exp)) (return (M_value (cadr exp) state return)))
-    ((eq? 'break (keyword exp)) (break state))
+    ((eq? 'break (keyword exp)) (break (check_break state)))
     ((eq? 'continue (keyword exp)) (continue state))
     ((eq? 'begin (keyword exp)) (M_state_block exp state return next break continue throw))
     ;((eq? 'try (keyword exp)) (M_state_try (cadr exp) (caadr (caddr exp)) (caddr (caddr exp)) (cadr (cadddr exp)) 'null state))
