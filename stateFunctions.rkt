@@ -17,7 +17,9 @@
     ((eq? 'break (keyword exp)) (break (check_break state)))
     ((eq? 'continue (keyword exp)) (continue state))
     ((eq? 'begin (keyword exp)) (M_state_block exp state return next break continue throw))
-    ;((eq? 'try (keyword exp)) (M_state_try (cadr exp) (caadr (caddr exp)) (caddr (caddr exp)) (cadr (cadddr exp)) 'null state))
+    ((eq? 'try (keyword exp)) (M_state_try exp state return next break continue throw))
+    ((eq? 'throw (keyword exp)) (throw (M_value (cadr exp) state throw) state))
+    ((eq? 'finally (keyword exp)) (M_state (cdr exp) (add-layer state) return next break continue throw))
     (else 'error)))
 
 (define (M_state exp state return next break continue throw)
@@ -41,12 +43,52 @@
                    (lambda (st) (next (remove-layer st)))
                    (lambda (st) (break (remove-layer st)))
                    (lambda (st) (continue (remove-layer st)))
-                   throw
+                   (lambda (ex st) (throw ex (remove-layer st)))
                    ))
  ; (remove-layer (M_state (cdr ls) (add-layer state) next))) ;; dont show me the insides
  ; (M_state (cdr ls) (add-layer state))) ;; show me the insides
 
+; try catch finally
+(define M_state_try
+  (lambda (stmt state return next break continue throw)
+    (let* (
+           (try_stmts (add_begin_try (cadr stmt)))
+           (finally_stmts (add_begin_finally (cadddr stmt)))
+           (new_return (lambda (v) (M_state_block finally_stmts state return (lambda (s) (return s)) break continue throw)))
+           (new_break (lambda (v) (M_state_block finally_stmts state return (lambda (s) (break s)) break continue throw)))
+           (new_continue (lambda (v) (M_state_block finally_stmts state return (lambda (s) (continue s)) break continue throw)))
+           (new_throw (create_throw_continuations (caddr stmt) state return next break continue throw finally_stmts))
+           )
+    (M_state_block try_stmts state new_return (lambda (st) (M_state_block finally_stmts st return next break continue throw)) new_break new_continue new_throw))))
+           
+; add 'begin to try
+(define add_begin_try
+  (lambda (try_stmt)
+    (cons 'begin try_stmt)))
 
+; add 'begin to finally
+(define add_begin_finally
+  (lambda (finally)
+    (cond
+      ((null? finally) '(begin))
+      ((not (eq? (car finally) 'finally)) (error "bad finally"))
+      (else (cons 'begin (cadr finally))))))
+
+(define create_throw_continuations
+  (lambda (stmt state return next break continue throw finally)
+    (cond
+      ((null? stmt) (lambda (ex st) (M_state_block finally state return (lambda (st) (throw ex st)) break continue throw)))
+      ((not (eq? (car stmt) 'catch)) (error "bad catch"))
+      (else (lambda (ex st) (M_statementlist
+                             (caddr stmt)
+                             (M_state_assign (caadr stmt) ex (add-layer state) return next)
+                             return
+                             (lambda (st1) (M_state_block finally (remove-layer st1) return next break continue throw))
+                             (lambda (st1) (break (remove-layer st1)))
+                             (lambda (st1) (continue (remove-layer st1)))
+                             (lambda (ex1 st1) (throw ex1 (remove-layer st1)))))))))
+
+; statement list
 (define M_statementlist
   (lambda (stmts state return next break continue throw)
     (if (null? stmts)
@@ -59,7 +101,7 @@
 (define (M_state_assign var expr state return next)
   (cond
     ((or (eq? (M_value expr state return) 'error)) 'error)
-    ((eq? (lookup var state) 'error) (next (add-binding var (M_value expr state return)))) ; if var is not in state
+    ((eq? (lookup var state) 'error) (next (add-binding var (M_value expr state return) state))) ; if var is not in state
     (else
      (next (update-binding var (M_value expr state return) state))
      )))

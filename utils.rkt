@@ -131,3 +131,11 @@
       ((null? state) 'error) ; state has no layers
       ((null? (cdr state)) 'error) ; state is only one layer
       (else state)))) ;; state has multiple layers
+
+
+; append an empty state
+(define append_empty_state
+  (lambda (state)
+    (display state)
+   ; (display (append '(()()) state))
+    (append '(()()) state)))
