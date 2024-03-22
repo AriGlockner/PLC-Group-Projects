@@ -38,13 +38,13 @@
 ; block statements
 (define (M_state_block ls state return next break continue throw)
   (M_statements (cdr ls)
-                   (add-layer state)
-                   return
-                   (lambda (st) (next (remove-layer st)))
-                   (lambda (st) (break (remove-layer st)))
-                   (lambda (st) (continue (remove-layer st)))
-                   (lambda (ex st) (throw ex (remove-layer st)))
-                   ))
+                (add-layer state)
+                return
+                (lambda (v) (next (remove-layer v)))
+                (lambda (v) (break (remove-layer v)))
+                (lambda (v) (continue (remove-layer v)))
+                (lambda (exception v) (throw exception (remove-layer v)))
+                ))
  ; (remove-layer (M_state (cdr ls) (add-layer state) next))) ;; dont show me the insides
  ; (M_state (cdr ls) (add-layer state))) ;; show me the insides
 
