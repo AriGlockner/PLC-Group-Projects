@@ -37,7 +37,7 @@
 
 ; block statements
 (define (M_state_block ls state return next break continue throw)
-  (M_statementlist (cdr ls)
+  (M_statements (cdr ls)
                    (add-layer state)
                    return
                    (lambda (st) (next (remove-layer st)))
@@ -70,7 +70,7 @@
       ((null? exp) (lambda (e st) (M_state_block finally state return (lambda (st) (throw e st)) break continue throw)))
       ((not (eq? (car exp) 'catch)) (error "bad catch"))
       (else
-       (lambda (exception curr_state) (M_statementlist
+       (lambda (exception curr_state) (M_statements
                              (caddr exp)
                              (add-binding (caadr exp) exception (add-layer state))
                              return
@@ -85,14 +85,16 @@
                                ))
                              ))))))
 
-; statement list
-(define M_statementlist
-  (lambda (stmts state return next break continue throw)
-    (if (null? stmts)
-        (next state)
-        (M_state (car stmts) state return
-                 (lambda (nstate) (M_statementlist (cdr stmts) nstate return next break continue throw )) break continue throw)
-        )))
+; deal with many statements 
+(define M_statements
+  (lambda (exp state return next break continue throw)
+    (cond
+      ((null? exp) (next state))
+      (else (M_state (car exp) state return
+                 (lambda (new_state)
+                   (M_statements (cdr exp) new_state return next break continue throw))
+                 break continue throw)
+            ))))
 
 ; assign (=) operation
 (define (M_state_assign var expr state return next)
