@@ -14,8 +14,8 @@
 (check-equal? (interpret "tests/p2_t3.bad") 32)
 (check-equal? (interpret "tests/p2_t4.bad") 2) 
 (check-equal? (interpret "tests/p2_t5.bad") 'error)
-;(check-equal? (interpret "tests/p2_t6.bad") 25) ; fail
-;(check-equal? (interpret "tests/p2_t7.bad") 21) ; fail
+(check-equal? (interpret "tests/p2_t6.bad") 25)
+(check-equal? (interpret "tests/p2_t7.bad") 21)
 (check-equal? (interpret "tests/p2_t8.bad") 6)
 (check-equal? (interpret "tests/p2_t9.bad") -1)
 (check-equal? (interpret "tests/p2_t10.bad") 789) 
