@@ -32,7 +32,6 @@
                      (next (remove-layer state))))
     ((null? exp)       (next state))
     ((null? (cdr exp)) (M_state_keyword_helper exp state return next break continue throw))
-    ;((not (list? (cadr exp))) (next (M_state_keyword_helper exp state next)))
     ((list? (car exp)) (M_state_keyword_helper exp state return (lambda (s) (M_state (cdr exp) s return (lambda (v) v) (lambda (v) v) (lambda (v) v) throw)) break continue throw))
     (else              (M_state_keyword_helper exp state return next break continue throw))))
 
@@ -86,23 +85,19 @@
 ; deal with an expression formatted as a list of statements
 (define M_statements
   (lambda (exp state return next break continue throw)
-    (cond
-      ((null? exp) (next state))
-      (else (M_state (car exp) state return
+    (if (null? exp)
+        (next state)
+        (M_state (car exp) state return
                  (lambda (new_state)
                    (M_statements (cdr exp) new_state return next break continue throw))
-                 break continue throw)
-            ))))
+                 break continue throw))))
 
 ; assign (=) operation
 (define (M_state_assign var expr state return next)
-  (cond
-    ((or (eq? (M_value expr state return) 'error)) 'error)
-   ; ((eq? (lookup var state) 'error) (next (add-binding var (M_value expr state return) state))) ; if var is not in state ; REMOVED
-    (else
-     (next (update-binding var (M_value expr state return) state))
-     )))
-
+  (if (or (eq? (M_value expr state return) 'error))
+      'error
+      (next (update-binding var (M_value expr state return) state))))
+      
 ; handle if when we have 2 statements (then and else)
 (define (M_state_if_2 condition statement1 statement2 state return next break continue throw)
   (if (eq? (M_bool condition state return) 'error)
@@ -135,8 +130,6 @@
            (M_state_if_2 condition statement1 statement2 state return next break continue throw))))
     (else 'error)))
 
-
-
 ; while operation
 (define (M_state_while condition statement state return next throw)
       (loop condition statement state return next throw))
@@ -148,11 +141,8 @@
                (lambda (s1) (loop condition statement s1 return next throw))
                (lambda (s1) (next s1))
                (lambda (s1) (loop condition statement s1 return next throw))
-               throw
-               ) 
-      (next state)
-      ))
-
+               throw)
+      (next state)))
 
 ; declare (var) operation
 (define (M_state_declare expr state return next)
@@ -162,9 +152,3 @@
         (if (null? (rightside expr))
             (let* ((s1 (add-binding var 'null state))) (next s1))
             (let* ((s1 (add-binding var (M_value (car (rightside expr)) state return) state))) (next s1))))))
-
-
-
-
-
-             
