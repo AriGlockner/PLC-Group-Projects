@@ -58,9 +58,9 @@
            (try_exp (add_begin_try (cadr exp)))
            (finally_exp (add_begin_finally (cadddr exp)))
            (new_next (lambda (s) (M_state_block finally_exp s return next break continue throw)))
-           (new_return (lambda (v) (M_state_block finally_exp state return return break continue throw)))
-           (new_break (lambda (v) (M_state_block finally_exp state return break break continue throw)))
-           (new_continue (lambda (v) (M_state_block finally_exp state return continue break continue throw)))
+           (new_return (lambda (s) (M_state_block finally_exp s return return break continue throw)))
+           (new_break (lambda (s) (M_state_block finally_exp s return break break continue throw)))
+           (new_continue (lambda (s) (M_state_block finally_exp s return continue break continue throw)))
            (new_throw (throw-helper (caddr exp) state return next break continue throw finally_exp))
            )
     (M_state_block try_exp state new_return new_next new_break new_continue new_throw))))
@@ -70,12 +70,12 @@
 (define throw-helper
   (lambda (exp state return next break continue throw finally)
     (cond
-      ((null? exp) (lambda (e s) (M_state_block finally state return (lambda (s) (throw e s)) break continue throw)))
+      ((null? exp) (lambda (e s) (M_state_block finally s return (lambda (s) (throw e s)) break continue throw)))
       ((not (eq? (car exp) 'catch)) (error "bad catch"))
       (else
        (lambda (exception curr_state) (M_statements
                              (caddr exp) ; catch expression/block
-                             (add-binding (caadr exp) exception (add-layer state)) ; bind the catch variable to the thrown exception value
+                             (add-binding (caadr exp) exception (add-layer curr_state)) ; bind the catch variable to the thrown exception value
                              return
                              (lambda (new_state) (M_state_block finally (remove-layer new_state) return next break continue throw)) ; next
                              (lambda (new_state) (break (remove-layer new_state))) ; break
