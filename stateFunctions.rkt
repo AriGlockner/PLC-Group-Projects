@@ -54,12 +54,13 @@
     (let* (
            (try_exp (add_begin_try (cadr exp)))
            (finally_exp (add_begin_finally (cadddr exp)))
+           (new_next (lambda (s) (M_state_block finally_exp s return next break continue throw)))
            (new_return (lambda (v) (M_state_block finally_exp state return (lambda (s) (return s)) break continue throw)))
            (new_break (lambda (v) (M_state_block finally_exp state return (lambda (s) (break s)) break continue throw)))
            (new_continue (lambda (v) (M_state_block finally_exp state return (lambda (s) (continue s)) break continue throw)))
            (new_throw (throw-helper (caddr exp) state return next break continue throw finally_exp))
            )
-    (M_state_block try_exp state new_return (lambda (st) (M_state_block finally_exp st return next break continue throw)) new_break new_continue new_throw))))
+    (M_state_block try_exp state new_return new_next new_break new_continue new_throw))))
           
 
 ; helper function for throw
