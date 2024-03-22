@@ -22,7 +22,7 @@
       (else
        
        (let* ((expressions (parser filename))
-              (final-state (foldl (lambda (exp state) (M_state exp state ret (lambda (v) v) (lambda (v) v) (lambda (v) v))) '() expressions)))
+              (final-state (foldl (lambda (exp state) (M_state exp state ret (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v))) '() expressions)))
          final-state)
        
        ))))))
