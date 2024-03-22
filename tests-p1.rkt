@@ -24,8 +24,7 @@
 (check-exn
    exn:fail? (lambda () (interpret "tests/test11.bad")))
 (check-equal? (interpret "tests/test12.bad") 'error)
-;(check-exn ;; now returns 'error instead of actualling erroring
-;   exn:fail? (lambda () (interpret "tests/test12.bad"))) 
+(check-equal? (interpret "tests/test12.bad") 'error)
 (check-exn
    exn:fail? (lambda () (interpret "tests/test13.bad")))
 ;;(check-exn ;; not a required error
