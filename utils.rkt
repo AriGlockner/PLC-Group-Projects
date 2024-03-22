@@ -123,5 +123,11 @@
                               (lambda (r-vars r-keys status)
                                 (return (cons (car vars) r-vars) (cons (car keys) r-keys) status)))))))
 
-    
 
+; verify the state has multiple layers
+(define check_break
+  (lambda (state)
+    (cond
+      ((null? state) 'error) ; state has no layers
+      ((null? (cdr state)) 'error) ; state is only one layer
+      (else state)))) ;; state has multiple layers
