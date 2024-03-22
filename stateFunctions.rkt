@@ -5,7 +5,8 @@
 (require "utils.rkt")
 (require "valueFunctions.rkt")
 
-; given an arbitrary expression, determine the state of the program after the expression
+; useful for calling the right thing once we're sure we have the expression (exp)
+; in the right format
 (define (M_state_keyword_helper exp state return next break continue throw)
   (cond
     ((eq? 'var (keyword exp))
@@ -22,6 +23,8 @@
     ((eq? 'finally (keyword exp)) (M_state (cdr exp) (add-layer state) return next break continue throw))
     (else 'error)))
 
+; given an arbitrary expression, determine the state of the program after the expression
+; (first, needs to make sure we set next properly (or leave it alone) and whatnot
 (define (M_state exp state return next break continue throw)
   (cond
     ((null? exp) (if (eq? next 'invalid_next)
@@ -30,7 +33,7 @@
     ((null? exp)       (next state))
     ((null? (cdr exp)) (M_state_keyword_helper exp state return next break continue throw))
     ;((not (list? (cadr exp))) (next (M_state_keyword_helper exp state next)))
-    ((list? (car exp)) (M_state_keyword_helper exp state return (lambda (s) (M_state (cdr exp) s (lambda (v) v) (lambda (v) v) (lambda (v) v))) break continue))
+    ((list? (car exp)) (M_state_keyword_helper exp state return (lambda (s) (M_state (cdr exp) s (lambda (v) v) (lambda (v) v) (lambda (v) v))) break continue ))
     (else              (M_state_keyword_helper exp state return next break continue throw))))
 
 
@@ -55,9 +58,9 @@
            (try_exp (add_begin_try (cadr exp)))
            (finally_exp (add_begin_finally (cadddr exp)))
            (new_next (lambda (s) (M_state_block finally_exp s return next break continue throw)))
-           (new_return (lambda (v) (M_state_block finally_exp state return (lambda (s) (return s)) break continue throw)))
-           (new_break (lambda (v) (M_state_block finally_exp state return (lambda (s) (break s)) break continue throw)))
-           (new_continue (lambda (v) (M_state_block finally_exp state return (lambda (s) (continue s)) break continue throw)))
+           (new_return (lambda (v) (M_state_block finally_exp state return return break continue throw)))
+           (new_break (lambda (v) (M_state_block finally_exp state return break break continue throw)))
+           (new_continue (lambda (v) (M_state_block finally_exp state return continue break continue throw)))
            (new_throw (throw-helper (caddr exp) state return next break continue throw finally_exp))
            )
     (M_state_block try_exp state new_return new_next new_break new_continue new_throw))))
@@ -67,12 +70,12 @@
 (define throw-helper
   (lambda (exp state return next break continue throw finally)
     (cond
-      ((null? exp) (lambda (e st) (M_state_block finally state return (lambda (st) (throw e st)) break continue throw)))
+      ((null? exp) (lambda (e s) (M_state_block finally state return (lambda (s) (throw e s)) break continue throw)))
       ((not (eq? (car exp) 'catch)) (error "bad catch"))
       (else
        (lambda (exception curr_state) (M_statements
-                             (caddr exp)
-                             (add-binding (caadr exp) exception (add-layer state))
+                             (caddr exp) ; catch expression/block
+                             (add-binding (caadr exp) exception (add-layer state)) ; bind the catch variable to the thrown exception value
                              return
                              (lambda (new_state) (M_state_block finally (remove-layer new_state) return next break continue throw))
                              (lambda (new_state) (break (remove-layer new_state)))
