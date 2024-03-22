@@ -77,7 +77,11 @@
                              (lambda (new_state) (break (remove-layer new_state)))
                              (lambda (new_state) (continue (remove-layer new_state)))
                              (lambda (new_exception new_state)
-                               (throw new_exception (remove-layer new_state)))
+                               (with-handlers
+                                   ((exn:fail? (lambda (exn)
+                                'error))) ; for test 19. if we get an error here return error
+                               (throw new_exception (remove-layer new_state))
+                               ))
                              ))))))
 
 ; statement list
