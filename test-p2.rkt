@@ -33,7 +33,7 @@
 ;; (check-equal? (interpret "tests/p2_t20.bad") 21) ; fail but optional
 
 
-(interpret "tests/p2_t17.bad")
+;;(interpret "tests/p2_t17.bad")
 
 
 ; break tests
