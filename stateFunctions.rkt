@@ -33,7 +33,7 @@
     ((null? exp)       (next state))
     ((null? (cdr exp)) (M_state_keyword_helper exp state return next break continue throw))
     ;((not (list? (cadr exp))) (next (M_state_keyword_helper exp state next)))
-    ((list? (car exp)) (M_state_keyword_helper exp state return (lambda (s) (M_state (cdr exp) s (lambda (v) v) (lambda (v) v) (lambda (v) v))) break continue ))
+    ((list? (car exp)) (M_state_keyword_helper exp state return (lambda (s) (M_state (cdr exp) s return (lambda (v) v) (lambda (v) v) (lambda (v) v) throw)) break continue throw))
     (else              (M_state_keyword_helper exp state return next break continue throw))))
 
 
@@ -43,10 +43,10 @@
   (M_statements (cdr ls)
                 (add-layer state)
                 return
-                (lambda (v) (next (remove-layer v)))
-                (lambda (v) (break (remove-layer v)))
-                (lambda (v) (continue (remove-layer v)))
-                (lambda (exception v) (throw exception (remove-layer v)))
+                (lambda (s) (next (remove-layer s)))
+                (lambda (s) (break (remove-layer s)))
+                (lambda (s) (continue (remove-layer s)))
+                (lambda (exception s) (throw exception (remove-layer s)))
                 ))
  ; (remove-layer (M_state (cdr ls) (add-layer state) next))) ;; dont show me the insides
  ; (M_state (cdr ls) (add-layer state))) ;; show me the insides
@@ -66,7 +66,7 @@
     (M_state_block try_exp state new_return new_next new_break new_continue new_throw))))
           
 
-; helper function for throw
+; helper function for when we see throw inside a try (so we can move to catch)
 (define throw-helper
   (lambda (exp state return next break continue throw finally)
     (cond
@@ -83,7 +83,7 @@
                              (lambda (new_exception new_state) (throw new_exception (remove-layer new_state))
                              )))))))
 
-; deal with many statements 
+; deal with an expression formatted as a list of statements
 (define M_statements
   (lambda (exp state return next break continue throw)
     (cond
