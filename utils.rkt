@@ -29,6 +29,7 @@
   (lambda (key state)
   (cond
     ((null? state) 'error) ; if state is empty
+    ((eq? state 'error) 'error)
     ((list? (car state))
        (let ((result (lookup-helper (caar state) (cadar state) key)))
          (if (eq? result 'badday)
@@ -49,11 +50,20 @@
     (combine empty-layer layers)))
 
 ; Removes the 1st layer from the front of the list of layers
-(define remove-layer
+(define remove-layer-old
   (lambda (layers)
     (if (null? layers)
         null
         (cdr layers))))
+
+
+(define remove-layer
+  (lambda (layers)
+    (cond
+      ((null? layers) null)
+      (else
+       (cdr layers)))))
+    
 
 ; Add Binding to the state
 (define add-binding
@@ -76,24 +86,15 @@
          (cons value (cadr layer))))))
 
 
-; Remove Binding from the state
-(define remove-binding
-  (lambda (name state)
-    (cond
-      [(null? state) '()]
-      [(eq? (caar state) name) (cdr state)]
-      [else (combine (car state) (remove-binding name (cdr state)))]
-      )))
 
 ; update binding
 (define update-binding
   (lambda (name newvalue state)
     (cond
-      ((null? state) (error "state should not be empty"))
+      ((null? state)
+       (error "state should not be empty"))
       ((list? (car state))
        (let ((result (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) (cons v1 (list v2))))))
-         
-         
          (if (eq? (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) v3)) 'notfound)
              (cons (car state) (update-binding name newvalue (cdr state))) ; continue searching the rest of the state
              (cons result (cdr state))))) ; return the value if found
@@ -113,5 +114,25 @@
                               (lambda (r-vars r-keys status)
                                 (return (cons (car vars) r-vars) (cons (car keys) r-keys) status)))))))
 
-    
 
+; verify the state has multiple layers
+(define check_break
+  (lambda (state)
+    (cond
+      ((null? state) 'error) ; state has no layers
+      ((null? (cdr state)) 'error) ; state is only one layer
+      (else state)))) ;; state has multiple layers
+
+
+; add 'begin to try
+(define add_begin_try
+  (lambda (exp)
+    (cons 'begin exp)))
+
+; add 'begin to finally
+(define add_begin_finally
+  (lambda (exp)
+    (cond
+      ((null? exp) '(begin))
+      ((not (eq? (car exp) 'finally)) (error "bad finally"))
+      (else (cons 'begin (cadr exp))))))

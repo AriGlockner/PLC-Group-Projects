@@ -1,0 +1,17 @@
+var x;
+
+try {
+  x = 0;
+
+  try {
+     throw 9001;
+  }
+  catch (e2) {
+     x = e2;
+     throw x;
+  }
+}
+catch (e1) {
+  x = x + e1;
+}
+return x;
