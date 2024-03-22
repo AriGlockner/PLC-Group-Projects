@@ -60,19 +60,7 @@
            (new_throw (throw-helper (caddr exp) state return next break continue throw finally_exp))
            )
     (M_state_block try_exp state new_return (lambda (st) (M_state_block finally_exp st return next break continue throw)) new_break new_continue new_throw))))
-           
-; add 'begin to try
-(define add_begin_try
-  (lambda (exp)
-    (cons 'begin exp)))
-
-; add 'begin to finally
-(define add_begin_finally
-  (lambda (exp)
-    (cond
-      ((null? exp) '(begin))
-      ((not (eq? (car exp) 'finally)) (error "bad finally"))
-      (else (cons 'begin (cadr exp))))))
+          
 
 ; helper function for throw
 (define throw-helper

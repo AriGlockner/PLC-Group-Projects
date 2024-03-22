@@ -123,3 +123,16 @@
       ((null? (cdr state)) 'error) ; state is only one layer
       (else state)))) ;; state has multiple layers
 
+
+; add 'begin to try
+(define add_begin_try
+  (lambda (exp)
+    (cons 'begin exp)))
+
+; add 'begin to finally
+(define add_begin_finally
+  (lambda (exp)
+    (cond
+      ((null? exp) '(begin))
+      ((not (eq? (car exp) 'finally)) (error "bad finally"))
+      (else (cons 'begin (cadr exp))))))
