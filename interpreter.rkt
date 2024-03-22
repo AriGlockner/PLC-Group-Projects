@@ -1,7 +1,7 @@
 ; Ethan Hansen, Gabriel Wolf, Ari Glockner
 ; CSDS 345 Programming Language Concepts
-; Interpreter Project 1
-; Feb 2024
+; Interpreter Project 2
+; Mar 2024
 
 #lang racket
 

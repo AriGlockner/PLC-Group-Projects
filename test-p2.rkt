@@ -29,6 +29,7 @@
 (check-equal? (interpret "tests/p2_t18.bad") 101)
 ;;(check-equal? (interpret "tests/p2_t19.bad") 'error) ; fail
 
+(interpret "tests/p2_t17.bad")
 
 ; break tests
 (check-equal? (M_state_while '(< x 9) '(begin (= x (+ x 1)) (= y 8))  state (lambda (v) v) (lambda (v) v) (lambda (v) v)) '(((x y a) (9 8 true))))
