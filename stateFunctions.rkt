@@ -23,6 +23,9 @@
 
 (define (M_state exp state return next break continue)
   (cond
+    ((null? exp) (if (eq? next 'invalid_next)
+                     (remove-layer state)
+                     (next (remove-layer state))))
     ((null? exp)       (next state))
     ((null? (cdr exp)) (M_state_keyword_helper exp state return next break continue))
     ;((not (list? (cadr exp))) (next (M_state_keyword_helper exp state next)))

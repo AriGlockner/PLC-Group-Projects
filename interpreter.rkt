@@ -14,7 +14,7 @@
 
 
 ; putting it all together, take a filename, parse the file, and interpret the results
-(define interpret
+(define interpret-old
   (lambda (filename)
     (call/cc (lambda (ret) 
     (cond
@@ -26,6 +26,11 @@
          final-state)
        
        ))))))
+
+
+(define interpret
+  (lambda (filename)
+    (call/cc (lambda (ret) (M_state (parser filename) '(()()) ret 'invalid_next 'invalid_break 'invalid_continue)))))
 
 
 ;(M_state '(var foo) state)
