@@ -50,43 +50,49 @@
 
 ; try catch finally
 (define M_state_try
-  (lambda (stmt state return next break continue throw)
+  (lambda (exp state return next break continue throw)
     (let* (
-           (try_stmts (add_begin_try (cadr stmt)))
-           (finally_stmts (add_begin_finally (cadddr stmt)))
-           (new_return (lambda (v) (M_state_block finally_stmts state return (lambda (s) (return s)) break continue throw)))
-           (new_break (lambda (v) (M_state_block finally_stmts state return (lambda (s) (break s)) break continue throw)))
-           (new_continue (lambda (v) (M_state_block finally_stmts state return (lambda (s) (continue s)) break continue throw)))
-           (new_throw (create_throw_continuations (caddr stmt) state return next break continue throw finally_stmts))
+           (try_exp (add_begin_try (cadr exp)))
+           (finally_exp (add_begin_finally (cadddr exp)))
+           (new_return (lambda (v) (M_state_block finally_exp state return (lambda (s) (return s)) break continue throw)))
+           (new_break (lambda (v) (M_state_block finally_exp state return (lambda (s) (break s)) break continue throw)))
+           (new_continue (lambda (v) (M_state_block finally_exp state return (lambda (s) (continue s)) break continue throw)))
+           (new_throw (throw-helper (caddr exp) state return next break continue throw finally_exp))
            )
-    (M_state_block try_stmts state new_return (lambda (st) (M_state_block finally_stmts st return next break continue throw)) new_break new_continue new_throw))))
+    (M_state_block try_exp state new_return (lambda (st) (M_state_block finally_exp st return next break continue throw)) new_break new_continue new_throw))))
            
 ; add 'begin to try
 (define add_begin_try
-  (lambda (try_stmt)
-    (cons 'begin try_stmt)))
+  (lambda (exp)
+    (cons 'begin exp)))
 
 ; add 'begin to finally
 (define add_begin_finally
-  (lambda (finally)
+  (lambda (exp)
     (cond
-      ((null? finally) '(begin))
-      ((not (eq? (car finally) 'finally)) (error "bad finally"))
-      (else (cons 'begin (cadr finally))))))
+      ((null? exp) '(begin))
+      ((not (eq? (car exp) 'finally)) (error "bad finally"))
+      (else (cons 'begin (cadr exp))))))
 
-(define create_throw_continuations
-  (lambda (stmt state return next break continue throw finally)
+; helper function for throw
+(define throw-helper
+  (lambda (exp state return next break continue throw finally)
     (cond
-      ((null? stmt) (lambda (ex st) (M_state_block finally state return (lambda (st) (throw ex st)) break continue throw)))
-      ((not (eq? (car stmt) 'catch)) (error "bad catch"))
-      (else (lambda (ex st) (M_statementlist
-                             (caddr stmt)
-                             (M_state_assign (caadr stmt) ex (add-layer state) return next)
+      ((null? exp) (lambda (e st) (M_state_block finally state return (lambda (st) (throw e st)) break continue throw)))
+      ((not (eq? (car exp) 'catch)) (error "bad catch"))
+      (else
+       (lambda (e st) (M_statementlist
+                             (caddr exp)
+                             (M_state_assign (caadr exp) e (add-layer state) return next)
                              return
-                             (lambda (st1) (M_state_block finally (remove-layer st1) return next break continue throw))
-                             (lambda (st1) (break (remove-layer st1)))
-                             (lambda (st1) (continue (remove-layer st1)))
-                             (lambda (ex1 st1) (throw ex1 (remove-layer st1)))))))))
+                             (lambda (new_state) (M_state_block finally (remove-layer new_state) return next break continue throw))
+                             (lambda (new_state) (break (remove-layer new_state)))
+                             (lambda (new_state) (continue (remove-layer new_state)))
+                             (lambda (e1 new_state)
+                           ;    (display "\nyo: ")
+                            ;   (display st1))
+                               (throw e1 (remove-layer new_state)))
+                             ))))))
 
 ; statement list
 (define M_statementlist
