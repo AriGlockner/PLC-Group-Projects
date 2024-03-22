@@ -35,8 +35,6 @@
     ((list? (car exp)) (M_state_keyword_helper exp state return (lambda (s) (M_state (cdr exp) s return (lambda (v) v) (lambda (v) v) (lambda (v) v) throw)) break continue throw))
     (else              (M_state_keyword_helper exp state return next break continue throw))))
 
-
-
 ; block statements
 (define (M_state_block ls state return next break continue throw)
   (M_statements (cdr ls)
@@ -45,10 +43,7 @@
                 (lambda (s) (next (remove-layer s)))
                 (lambda (s) (break (remove-layer s)))
                 (lambda (s) (continue (remove-layer s)))
-                (lambda (exception s) (throw exception (remove-layer s)))
-                ))
- ; (remove-layer (M_state (cdr ls) (add-layer state) next))) ;; dont show me the insides
- ; (M_state (cdr ls) (add-layer state))) ;; show me the insides
+                (lambda (exception s) (throw exception (remove-layer s)))))
 
 ; try catch finally
 (define M_state_try
@@ -64,7 +59,6 @@
            )
     (M_state_block try_exp state new_return new_next new_break new_continue new_throw))))
           
-
 ; helper function for when we see throw inside a try (so we can move to catch)
 (define throw-helper
   (lambda (exp state return next break continue throw finally)
@@ -79,8 +73,7 @@
                              (lambda (new_state) (M_state_block finally (remove-layer new_state) return next break continue throw)) ; next
                              (lambda (new_state) (break (remove-layer new_state))) ; break
                              (lambda (new_state) (continue (remove-layer new_state))) ; continue
-                             (lambda (new_exception new_state) (throw new_exception (remove-layer new_state))
-                             )))))))
+                             (lambda (new_exception new_state) (throw new_exception (remove-layer new_state)))))))))
 
 ; deal with an expression formatted as a list of statements
 (define M_statements
