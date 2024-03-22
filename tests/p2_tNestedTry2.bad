@@ -1,0 +1,7 @@
+var x = 0;
+try {
+  return x;
+}
+catch (e) {
+
+}

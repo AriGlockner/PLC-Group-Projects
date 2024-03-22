@@ -8,7 +8,7 @@ try {
   }
   catch (e2) {
      x = e2;
-     return x;
+     throw x;
   }
 }
 catch (e1) {
