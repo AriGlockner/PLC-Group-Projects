@@ -1,21 +1,14 @@
-var x = 0;
+var x;
 
 try {
   x = 0;
-  var y = 10;
 
   try {
-     while (x <= y) {
-       x = x + 1;
-       if (x == y) {
-         throw y;
-       }
-     }
+     throw 9001;
   }
   catch (e2) {
-     x = x + e2;
+     x = e2;
      return x;
-     throw x;
   }
 }
 catch (e1) {
