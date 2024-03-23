@@ -87,7 +87,7 @@
 
 ; assign (=) operation
 (define (M_state_assign var expr state return next)
-  (if (or (eq? (M_value expr state return) 'error))
+  (if (eq? (M_value expr state return) 'error)
       'error
       (next (update-binding var (M_value expr state return) state))))
       

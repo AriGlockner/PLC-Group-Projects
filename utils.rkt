@@ -49,14 +49,14 @@
   (lambda (layers)
     (combine empty-layer layers)))
 
-; Removes the 1st layer from the front of the list of layers
+; [DEPRECATED] Removes the 1st layer from the front of the list of layers
 (define remove-layer-old
   (lambda (layers)
     (if (null? layers)
         null
         (cdr layers))))
 
-; Delete the layer
+; Removes the 1st layer from the front of the list of layers
 (define remove-layer
   (lambda (layers)
     (cond
@@ -70,18 +70,6 @@
   (if (null? state)
       (list (cons (list name) (list (list value))))
       (cons (cons (cons name (caar state)) (list (cons value (cadar state)))) (cdr state)))))
-
-; Add the name/value to the layer
-(define add-to-layer
-  (lambda (name value layer)
-    (list
-     (if (null? (car layer))
-         (list name)
-         (cons name (car layer)))
-     (if (null? (cadr layer))
-         (list value)
-         (cons value (cadr layer))))))
-
 
 
 ; update binding
