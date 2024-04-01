@@ -5,10 +5,14 @@
 (require "utils.rkt")
 (require "valueFunctions.rkt")
 
-; useful for calling the right thing once we're sure we have the expression (exp)
-; in the right format
-(define (M_state_keyword_helper exp state return next break continue throw)
+; given an arbitrary expression, determine the state of the program after the expression
+; (first, needs to make sure we set next properly (or leave it alone) and whatnot
+(define (M_state exp state return next break continue throw)
   (cond
+    ((null? exp) (if (eq? next 'invalid_next)
+                     (remove-layer state)
+                     (next (remove-layer state))))
+    ((null? exp) (next state))
     ((eq? 'var (keyword exp))
        (M_state_declare exp state return next))
     ((eq? '= (keyword exp)) (M_state_assign (cadr exp) (caddr exp) state return next))
@@ -21,19 +25,10 @@
     ((eq? 'try (keyword exp)) (M_state_try exp state return next break continue throw))
     ((eq? 'throw (keyword exp)) (throw (M_value (cadr exp) state throw) state))
     ((eq? 'finally (keyword exp)) (M_state (cdr exp) (add-layer state) return next break continue throw))
-    (else 'error)))
+    (else 'error)
+    )
+  )
 
-; given an arbitrary expression, determine the state of the program after the expression
-; (first, needs to make sure we set next properly (or leave it alone) and whatnot
-(define (M_state exp state return next break continue throw)
-  (cond
-    ((null? exp) (if (eq? next 'invalid_next)
-                     (remove-layer state)
-                     (next (remove-layer state))))
-    ((null? exp)       (next state))
-    ((null? (cdr exp)) (M_state_keyword_helper exp state return next break continue throw))
-    ((list? (car exp)) (M_state_keyword_helper exp state return (lambda (s) (M_state (cdr exp) s return (lambda (v) v) (lambda (v) v) (lambda (v) v) throw)) break continue throw))
-    (else              (M_state_keyword_helper exp state return next break continue throw))))
 
 ; block statements
 (define (M_state_block ls state return next break continue throw)
