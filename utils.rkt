@@ -41,7 +41,13 @@
   (lambda (vars keys value)
     (cond
       ((or (null? vars) (null? keys)) 'badday)
-      ((eq? (car vars) value) (car keys))
+      ((eq? (car vars) value)
+       (cond
+         ((not (box? (car keys))) (car keys))
+         ((void? (unbox (car keys))) (error "variable not assigned"))
+         (else
+          (unbox (car keys)))))
+      ; (car keys))
       (else (lookup-helper (cdr vars) (cdr keys) value)))))
 
 ; Adds a new empty layer to the front of the layers
@@ -68,8 +74,8 @@
 (define add-binding
   (lambda (name value state)
   (if (null? state)
-      (list (cons (list name) (list (list value))))
-      (cons (cons (cons name (caar state)) (list (cons value (cadar state)))) (cdr state)))))
+      (list (cons (list name) (list (list (box value)))))
+      (cons (cons (cons name (caar state)) (list (cons (box value) (cadar state)))) (cdr state)))))
 
 
 ; update binding
