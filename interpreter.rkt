@@ -7,7 +7,8 @@
 
 (provide (all-defined-out))
 
-(require "simpleParser.rkt")
+;(require "simpleParser.rkt")
+(require "functionParser.rkt")
 (require "stateFunctions.rkt")
 (require "valueFunctions.rkt")
 (require "utils.rkt")
