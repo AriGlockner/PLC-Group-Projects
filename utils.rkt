@@ -77,7 +77,6 @@
       (list (cons (list name) (list (list (box value)))))
       (cons (cons (cons name (caar state)) (list (cons (box value) (cadar state)))) (cdr state)))))
 
-
 ; update binding
 (define update-binding
   (lambda (name newvalue state)
@@ -85,24 +84,46 @@
       ((null? state)
        (error "state should not be empty"))
       ((list? (car state))
-       (let ((result (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) (cons v1 (list v2))))))
-         (if (eq? (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) v3)) 'notfound)
-             (cons (car state) (update-binding name newvalue (cdr state))) ; continue searching the rest of the state
-             (cons result (cdr state))))) ; return the value if found
+       (let ((result (update-binding-helper (caar state) (cadar state) name newvalue state (lambda (v1 v2 v3) (cons v1 (list v2))))))
+         (cond
+           ((eq? (update-binding-helper (caar state) (cadar state) name newvalue state (lambda (v1 v2 v3) v3)) 'notfound)
+             (cons (car state) (update-binding name newvalue (cdr state)))) ; continue searching the rest of the state
+           (else ; return the value if found
+           ; (display state)
+            (cons result (cdr state)))
+           )))
     (else (error "state is bad")))))
 
 (define update-binding-helper
-  (lambda (vars keys value newvalue return)
+  (lambda (vars keys value newvalue state return)
     (cond
       ((or (null? vars) (null? keys)) (return '() '() 'notfound))
       ((eq? (car vars) value) 
-       (update-binding-helper (cdr vars) (cdr keys) value newvalue
+       (update-binding-helper (cdr vars) (cdr keys) value newvalue state
                               (lambda (r-vars r-keys status)
-                                (return (cons value r-vars) (cons newvalue r-keys) 'found))))
+                              ;;  (display "\n yo mama\n")
+                               ;;(display (lookup value state))
+                                
+                             ;;   (display (caadar state))
+                               ;; (display (unbox (car keys)))
+                                ;;(display newvalue)
+                              ;;  (display (set-box! (car keys) newvalue))
+                              ;;  (display (unbox (caadar state)))
+                              ;; (display (unbox
+                                       ;;  (begin (set-box! (caadar state) newvalue) )
+                                     ;;          ))
+
+                                
+                                
+                                (return (cons value r-vars) (cons (begin (set-box! (caadar state) newvalue)) r-keys) 'found))))
       (else 
-       (update-binding-helper (cdr vars) (cdr keys) value newvalue
+       (update-binding-helper (cdr vars) (cdr keys) value newvalue state
                               (lambda (r-vars r-keys status)
                                 (return (cons (car vars) r-vars) (cons (car keys) r-keys) status)))))))
+
+
+
+
 
 ; verify the state has multiple layers
 (define check_break
