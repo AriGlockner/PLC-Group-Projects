@@ -17,7 +17,15 @@
 ;(check-equal? (interpret "tests/test3.bad") 10)
 ;(check-equal? (interpret "tests/test4.bad") 16)
 ;(check-equal? (interpret "tests/test5.bad") 220)
-(interpret "tests/test6.bad")
+
+
+
+
+(interpret "tests/test6_x.bad")
+
+
+(interpret "tests/p2_t1.bad")
+
 ;(check-equal? (interpret "tests/test6.bad") 5)
 ;(check-equal? (interpret "tests/test7.bad") 6)
 ;(check-equal? (interpret "tests/test8.bad") 10)

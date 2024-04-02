@@ -84,20 +84,57 @@
 
 (define update-binding
   (lambda (var newvalue state)
-    (cond
-      (call/cc (lambda (end) (update-binding-helper var newvalue state state)))
-      )))
+    (call/cc
+     (lambda (end)
+       (display "\nstate: ")
+       (display state)
+       (display "\n looking for: ")
+       (display var)
+       
+       (let ((result (update-binding-O var newvalue state state)))
+         (display "\nresult:")
+         (display result)
+         (end result)
+
+
+        ; (let ((result (update-binding-helper var newvalue state state)))
+        ; (display "\nresult:")
+        ; (display result)
+        ; (end result)
+
+
+         )))))
+
 
 (define update-binding-helper
   (lambda (var newvalue state end)
     (cond
-      ((equal? '((()()))) (error "state is empty"))
-      (else
+      ((equal? state '((()()))) (error "state is empty"))
+      ((null? state)
+       (display "yo gabba")
        (display state)
-       (state end)
+       end
+       )
+      ((eq? '() (cdr state))
+       (display "cdr is null!")
+       (update-binding-helper var newvalue (car state) end)
+       )
+      
+      
+      ((atom? (car state)) (update-binding-helper var newvalue (cdr state) end))
+      ((null? (car state)) (update-binding-helper var newvalue (remove-layer state) end))
+      ((eq? var (caar state))
+     ;  (display  (caadr state))
+       (begin (set-box! (caadr state) newvalue) end))
+      (else
+      ; (display state)
+       (update-binding-helper var newvalue (cons (cdar state) (cons (cdadr state) (cddr state))) end)
        )
       )))
-    
+
+
+; (((z y) (#&20 #&2)) ((x) (#&10)))
+; (((m y x) (#&null #&6 #&5)))
 
 
 
@@ -105,6 +142,34 @@
 
 
 
+
+; update binding
+(define update-binding-O
+  (lambda (name newvalue state end)
+    (cond
+      ((null? state)
+       (error "state should not be empty"))
+      ((list? (car state))
+       (let ((result (update-binding-helper-O (caar state) (cadar state) name newvalue end state (lambda (v1 v2 v3) (cons v1 (list v2))))))
+         (if (eq? (update-binding-helper-O (caar state) (cadar state) name newvalue end state (lambda (v1 v2 v3) v3)) 'notfound)
+             (cons (car state) (update-binding-O name newvalue (cdr state) end)) ; continue searching the rest of the state
+             (cons result (cdr state))))) ; return the value if found
+    (else (error "state is bad")))))
+
+(define update-binding-helper-O
+  (lambda (vars keys value newvalue end state return)
+    (cond
+      ((or (null? vars) (null? keys)) (return '() '() 'notfound))
+      ((eq? (car vars) value)
+     ;  (display "yoyoyoyo")
+      ; (display (caadar state))
+       (update-binding-helper-O (cdr vars) (cdr keys) value newvalue end state
+                              (lambda (r-vars r-keys status)
+                                (return (cons value r-vars) (cons (begin (set-box! (caadar state) newvalue) end) r-keys) 'found))))
+      (else 
+       (update-binding-helper-O (cdr vars) (cdr keys) value newvalue end state
+                              (lambda (r-vars r-keys status)
+                                (return (cons (car vars) r-vars) (cons (car keys) r-keys) status)))))))
 
 
 
