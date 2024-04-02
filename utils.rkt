@@ -77,8 +77,76 @@
       (list (cons (list name) (list (list (box value)))))
       (cons (cons (cons name (caar state)) (list (cons (box value) (cadar state)))) (cdr state)))))
 
-; update binding
+
+
+
+
+
 (define update-binding
+  (lambda (var newvalue state)
+    (cond
+      (call/cc (lambda (end) (update-binding-helper var newvalue state state)))
+      )))
+
+(define update-binding-helper
+  (lambda (var newvalue state end)
+    (cond
+      ((equal? '((()()))) (error "state is empty"))
+      (else
+       (display state)
+       (state end)
+       )
+      )))
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+; update binding
+(define update-binding-ORIGINAL
+  (lambda (name newvalue state)
+    (cond
+      ((null? state)
+       (error "state should not be empty"))
+      ((list? (car state))
+       (let ((result (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) (cons v1 (list v2))))))
+         (if (eq? (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) v3)) 'notfound)
+             (cons (car state) (update-binding name newvalue (cdr state))) ; continue searching the rest of the state
+             (cons result (cdr state))))) ; return the value if found
+    (else (error "state is bad")))))
+
+(define update-binding-helper-ORIGINAL
+  (lambda (vars keys value newvalue return)
+    (cond
+      ((or (null? vars) (null? keys)) (return '() '() 'notfound))
+      ((eq? (car vars) value) 
+       (update-binding-helper (cdr vars) (cdr keys) value newvalue
+                              (lambda (r-vars r-keys status)
+                                (return (cons value r-vars) (cons newvalue r-keys) 'found))))
+      (else 
+       (update-binding-helper (cdr vars) (cdr keys) value newvalue
+                              (lambda (r-vars r-keys status)
+                                (return (cons (car vars) r-vars) (cons (car keys) r-keys) status)))))))
+
+
+
+
+
+
+; update binding
+(define update-binding-xx
   (lambda (name newvalue state)
     (cond
       ((null? state)
@@ -94,7 +162,7 @@
            )))
     (else (error "state is bad")))))
 
-(define update-binding-helper
+(define update-binding-helper-xx
   (lambda (vars keys value newvalue state return)
     (cond
       ((or (null? vars) (null? keys)) (return '() '() 'notfound))
@@ -115,11 +183,12 @@
 
                                 
                                 
-                                (return (cons value r-vars) (cons (begin (set-box! (caadar state) newvalue)) r-keys) 'found))))
+                                (return (cons value r-vars) (cons (begin (set-box! (caadar state) newvalue) #t) r-keys) 'found))))
       (else 
        (update-binding-helper (cdr vars) (cdr keys) value newvalue state
                               (lambda (r-vars r-keys status)
                                 (return (cons (car vars) r-vars) (cons (car keys) r-keys) status)))))))
+
 
 
 
