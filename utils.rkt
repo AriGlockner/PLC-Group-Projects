@@ -91,16 +91,26 @@
        (display "\n looking for: ")
        (display var)
        
-       (let ((result (update-binding-O var newvalue state state)))
+   ;    (let ((result (update-binding-O var newvalue state state)))
+    ;     (display "\nresult:")
+    ;     (display result)
+    ;     (end result)
+
+
+         (let ((result (update-binding-helper var newvalue (car state) (car state))))
          (display "\nresult:")
          (display result)
-         (end result)
-
-
-        ; (let ((result (update-binding-helper var newvalue state state)))
-        ; (display "\nresult:")
-        ; (display result)
-        ; (end result)
+           (cond
+            ; ((eq? state '()) (error "state is empty in the update-binding"))
+            ;; ((eq? state '()) (end state))
+             ((eq? result #f)
+             ; (display "ZOOWEEMAMAMA")
+            ;  (display (cons (car state) (update-binding var newvalue (cdr state))))
+              (end (cons (car state) (update-binding var newvalue (cdr state))))
+              )
+             (else
+              (end (list result)))
+             )
 
 
          )))))
@@ -113,12 +123,12 @@
       ((null? state)
        (display "yo gabba")
        (display state)
-       end
+       #f
        )
-      ((eq? '() (cdr state))
-       (display "cdr is null!")
-       (update-binding-helper var newvalue (car state) end)
-       )
+   ;   ((eq? '() (cdr state))
+   ;    (display "cdr is null!")
+   ;    (update-binding-helper var newvalue (car state) end)
+   ;    )
       
       
       ((atom? (car state)) (update-binding-helper var newvalue (cdr state) end))

@@ -21,10 +21,17 @@
 
 
 
-(interpret "tests/test6_x.bad")
+;(interpret "tests/test6_x.bad")
 
 
-(interpret "tests/p2_t1.bad")
+;(interpret "tests/p2_t1.bad")
+
+
+;(interpret "tests/p2_t11.bad")
+;(interpret "tests/p2_t12.bad")
+(interpret "tests/p2_t17.bad")
+
+
 
 ;(check-equal? (interpret "tests/test6.bad") 5)
 ;(check-equal? (interpret "tests/test7.bad") 6)
