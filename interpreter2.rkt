@@ -224,12 +224,6 @@
 ; Environment/State Functions
 ;------------------------
 
-; Creates a new environment for a function from the global variables and the parameters
-(define newenvironment
-  (lambda (global params)
-    (list (car params) (car global))
-  ))
-
 ; create a new empty environment
 (define initenvironment
   (lambda ()
@@ -239,6 +233,22 @@
 (define emptyframe
   (lambda ()
     '(() ())))
+
+; Creates a new environment for a function from the global variables and the parameters
+(define newenvironment
+  (lambda (global params)
+    (list (car params) (car global))))
+
+; Gets the global variables out of an environment
+(define (get-globals env)
+  (get-globals-cps env (lambda (v) v)))
+
+; Helper to make this tail recursive
+(define (get-globals-cps env return)
+  (cond
+    ((null? env) (return '((() ()))))
+    ((null? (cdr env)) (return env))
+    (else (return (get-globals-cps (cdr env) (lambda (v) v))))))
 
 ; add a frame onto the top of the environment
 (define push-frame
@@ -399,3 +409,7 @@
 (define global_var '((() ())))
 (define params '((() ())))
 (check-equal? (newenvironment (insert 'a 10 global_var) (insert 'a 1 (insert 'b 5 params))) '(((a b) (#&1 #&5)) ((a) (#&10))))
+; Check getting the global variables
+(check-equal? (get-globals global_var) '((() ())))
+(check-equal? (get-globals (insert 'a 1 (insert 'b 5 params))) '(((a b) (#&1 #&5))))
+(check-equal? (get-globals (newenvironment (insert 'a 10 global_var) (insert 'a 1 (insert 'b 5 params)))) '(((a) (#&10))))
