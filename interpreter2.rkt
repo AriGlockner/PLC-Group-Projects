@@ -135,42 +135,103 @@
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
 (define eval-expression
-  (lambda (expr environment)
+  (lambda (expr enviroment)
+    (eval-expression-cps expr enviroment (lambda (v) v))))
+
+(define eval-expression-cps
+  (lambda (expr environment return)
     (cond
-      ((number? expr) expr)
-      ((eq? expr 'true) #t)
-      ((eq? expr 'false) #f)
-      ((not (list? expr)) (lookup expr environment))
-      (else (eval-operator expr environment)))))
+      ((number? expr) (return expr))
+      ((eq? expr 'true) (return #t))
+      ((eq? expr 'false) (return #f))
+      ((not (list? expr)) (return (lookup expr environment)))
+      (else (return (eval-operator expr environment))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
 ; pass the result to eval-binary-op2 to evaluate the right operand.  This forces the operands to be evaluated in the proper order in case you choose
 ; to add side effects to the interpreter
 (define eval-operator
-  (lambda (expr environment)
+  (lambda (expr enviroment)
+    (eval-operator-cps expr enviroment (lambda (v) v))))
+
+(define eval-operator-cps 
+  (lambda (expr environment return)
     (cond
-      ((eq? '! (operator expr)) (not (eval-expression (operand1 expr) environment)))
-      ((and (eq? '- (operator expr)) (= 2 (length expr))) (- (eval-expression (operand1 expr) environment)))
-      (else (eval-binary-op2 expr (eval-expression (operand1 expr) environment) environment)))))
+      ((eq? '! (operator expr))
+       (eval-expression-cps (operand1 expr) environment
+                        (lambda (r-op1)
+                          (return (not r-op1)))))
+      ((and (eq? '- (operator expr)) (= 2 (length expr)))
+       (eval-expression-cps (operand1 expr) environment
+                        (lambda (r-op1)
+                          (return (- r-op1)))))
+      (else
+       (eval-expression-cps (operand1 expr) environment
+                        (lambda (r-op1)
+                          (return (eval-binary-op2 expr r-op1 environment))))))))
 
 ; Complete the evaluation of the binary operator by evaluating the second operand and performing the operation.
 (define eval-binary-op2
-  (lambda (expr op1value environment)
+  (lambda (expr op1value enviroment)
+    (eval-binary-op2-cps expr op1value enviroment (lambda (v) v))))
+
+(define eval-binary-op2-cps
+  (lambda (expr op1value environment return)
     (cond
-      ((eq? '+ (operator expr)) (+ op1value (eval-expression (operand2 expr) environment)))
-      ((eq? '- (operator expr)) (- op1value (eval-expression (operand2 expr) environment)))
-      ((eq? '* (operator expr)) (* op1value (eval-expression (operand2 expr) environment)))
-      ((eq? '/ (operator expr)) (quotient op1value (eval-expression (operand2 expr) environment)))
-      ((eq? '% (operator expr)) (remainder op1value (eval-expression (operand2 expr) environment)))
-      ((eq? '== (operator expr)) (isequal op1value (eval-expression (operand2 expr) environment)))
-      ((eq? '!= (operator expr)) (not (isequal op1value (eval-expression (operand2 expr) environment))))
-      ((eq? '< (operator expr)) (< op1value (eval-expression (operand2 expr) environment)))
-      ((eq? '> (operator expr)) (> op1value (eval-expression (operand2 expr) environment)))
-      ((eq? '<= (operator expr)) (<= op1value (eval-expression (operand2 expr) environment)))
-      ((eq? '>= (operator expr)) (>= op1value (eval-expression (operand2 expr) environment)))
-      ((eq? '|| (operator expr)) (or op1value (eval-expression (operand2 expr) environment)))
-      ((eq? '&& (operator expr)) (and op1value (eval-expression (operand2 expr) environment)))
-      (else (myerror "Unknown operator:" (operator expr))))))
+      ((eq? '+ (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (+ op1value r-op2)))))
+      ((eq? '- (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (- op1value r-op2)))))
+      ((eq? '* (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (* op1value r-op2)))))      
+      ((eq? '/ (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (quotient op1value r-op2)))))
+      ((eq? '% (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (remainder op1value r-op2)))))
+      ((eq? '== (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (isequal op1value r-op2)))))
+      ((eq? '!= (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (not(isequal op1value r-op2))))))
+      ((eq? '< (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (< op1value r-op2)))))
+      ((eq? '> (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (> op1value r-op2)))))
+      ((eq? '<= (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (<= op1value r-op2)))))
+      ((eq? '>= (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (>= op1value r-op2)))))
+      ((eq? '|| (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (or op1value r-op2)))))
+      ((eq? '&& (operator expr))
+       (eval-expression-cps (operand2 expr) environment
+                        (lambda (r-op2)
+                          (return (and op1value r-op2)))))
+      (else
+       (myerror "Unknown operator:" (operator expr))))))
 
 ; Determines if two values are equal.  We need a special test because there are both boolean and integer types.
 (define isequal
@@ -384,7 +445,37 @@
                         (if (null? vals)
                             str
                             (makestr (string-append str (string-append " " (symbol->string (car vals)))) (cdr vals))))))
-      (error-break (display (string-append (string-append str (makestr "" vals)) "\n"))))))
+      (error-break
+       ;(display (string-append (string-append str (makestr "" vals)) "\n"))
+       ))))
+
+
+
+(check-equal? (interpret "tests/test1.bad") 150)
+(check-equal? (interpret "tests/test2.bad") -4)
+(check-equal? (interpret "tests/test3.bad") 10)
+(check-equal? (interpret "tests/test4.bad") 16)
+(check-equal? (interpret "tests/test5.bad") 220)
+(check-equal? (interpret "tests/test6.bad") 5)
+(check-equal? (interpret "tests/test7.bad") 6)
+(check-equal? (interpret "tests/test8.bad") 10)
+(check-equal? (interpret "tests/test9.bad") 5)
+(check-equal? (interpret "tests/test10.bad") -39)
+(check-exn
+   exn:fail? (lambda () (interpret "tests/test11.bad")))
+(check-equal? (interpret "tests/test12.bad") 'error)
+(check-equal? (interpret "tests/test12.bad") 'error)
+(check-exn
+   exn:fail? (lambda () (interpret "tests/test13.bad")))
+(check-exn
+   exn:fail? (lambda () (interpret "tests/test14.bad")))
+(check-equal? (interpret "tests/test15.bad") 'true)
+(check-equal? (interpret "tests/test16.bad") 100)
+(check-equal? (interpret "tests/test17.bad") 'false)
+(check-equal? (interpret "tests/test18.bad") 'true)
+(check-equal? (interpret "tests/test19.bad") 128)
+(check-equal? (interpret "tests/test20.bad") 12)
+
 
 
 (check-equal? (interpret "tests/p2_t1.bad") 20)
