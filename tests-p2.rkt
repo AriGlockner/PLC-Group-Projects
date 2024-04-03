@@ -25,7 +25,7 @@
 (check-equal? (interpret "tests/p2_t14.bad") 12)
 (check-equal? (interpret "tests/p2_t15.bad") 125)
 (check-equal? (interpret "tests/p2_t16.bad") 110)
-(check-equal? (interpret "tests/p2_t17.bad") 2000400) ; fail
+(check-equal? (interpret "tests/p2_t17.bad") 2000400)
 (check-equal? (interpret "tests/p2_t18.bad") 101)
 (check-equal? (interpret "tests/p2_t19.bad") 'error)
 (check-equal? (interpret "tests/p2_tNestedTry.bad") 18002)
