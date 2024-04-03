@@ -43,25 +43,25 @@
 ; Calls the return continuation with the given expression value
 (define interpret-return
   (lambda (statement environment return)
-    (return (eval-expression (get-expr statement) environment (lambda (thrw) thrw)))))
+    (return (eval-expression (get-expr statement) environment (lambda (thrw) thrw)))))  ;;;; HERE
 
 ; Adds a new variable binding to the environment.  There may be an assignment with the variable
 (define interpret-declare
   (lambda (statement environment next)
     (if (exists-declare-value? statement)
-        (next (insert (get-declare-var statement) (eval-expression (get-declare-value statement) environment (lambda (thrw) thrw)) environment))
+        (next (insert (get-declare-var statement) (eval-expression (get-declare-value statement) environment (lambda (thrw) thrw)) environment)) ;;;; HERE
         (next (insert (get-declare-var statement) 'novalue environment)))))
 
 ; Updates the environment to add a new binding for a variable
 (define interpret-assign
   (lambda (statement environment next)
-    (next (update (get-assign-lhs statement) (eval-expression (get-assign-rhs statement) environment (lambda (thrw) thrw)) environment))))
+    (next (update (get-assign-lhs statement) (eval-expression (get-assign-rhs statement) environment (lambda (thrw) thrw)) environment)))) ;;;; HERE
 
 ; We need to check if there is an else condition.  Otherwise, we evaluate the expression and do the right thing.
 (define interpret-if
   (lambda (statement environment return break continue throw next)
     (cond
-      ((eval-expression (get-condition statement) environment (lambda (thrw) thrw)) (interpret-statement (get-then statement) environment return break continue throw next))
+      ((eval-expression (get-condition statement) environment throw) (interpret-statement (get-then statement) environment return break continue throw next))
       ((exists-else? statement) (interpret-statement (get-else statement) environment return break continue throw next))
       (else (next environment)))))
 
@@ -69,7 +69,7 @@
 (define interpret-while
   (lambda (statement environment return throw next)
     (letrec ((loop (lambda (condition body environment)
-                     (if (eval-expression condition environment (lambda (thrw) thrw))
+                     (if (eval-expression condition environment throw)
                          (interpret-statement body environment return (lambda (env) (next env)) (lambda (env) (loop condition body env)) throw (lambda (env) (loop condition body env)))
                          (next environment)))))
       (loop (get-condition statement) (get-body statement) environment))))
@@ -88,7 +88,7 @@
 ; We use a continuation to throw the proper value.  Because we are not using boxes, the environment/state must be thrown as well so any environment changes will be kept
 (define interpret-throw
   (lambda (statement environment throw)
-    (throw (eval-expression (get-expr statement) environment (lambda (thrw) thrw)) environment)))
+    (throw (eval-expression (get-expr statement) environment throw) environment)))
 
 ; Interpret a try-catch-finally block
 
