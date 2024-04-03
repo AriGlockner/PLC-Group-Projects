@@ -28,9 +28,9 @@
 (define interpret-statement
   (lambda (statement environment return break continue throw next)
     (cond
-      ((eq? 'return (statement-type statement)) (interpret-return statement environment return))
-      ((eq? 'var (statement-type statement)) (interpret-declare statement environment next))
-      ((eq? '= (statement-type statement)) (interpret-assign statement environment next))
+      ((eq? 'return (statement-type statement)) (interpret-return statement environment return throw))
+      ((eq? 'var (statement-type statement)) (interpret-declare statement environment next throw))
+      ((eq? '= (statement-type statement)) (interpret-assign statement environment next throw))
       ((eq? 'if (statement-type statement)) (interpret-if statement environment return break continue throw next))
       ((eq? 'while (statement-type statement)) (interpret-while statement environment return throw next))
       ((eq? 'continue (statement-type statement)) (continue environment))
@@ -42,26 +42,26 @@
 
 ; Calls the return continuation with the given expression value
 (define interpret-return
-  (lambda (statement environment return)
-    (return (eval-expression (get-expr statement) environment))))
+  (lambda (statement environment return throw)
+    (return (eval-expression (get-expr statement) environment throw))))
 
 ; Adds a new variable binding to the environment.  There may be an assignment with the variable
 (define interpret-declare
-  (lambda (statement environment next)
+  (lambda (statement environment next throw)
     (if (exists-declare-value? statement)
-        (next (insert (get-declare-var statement) (eval-expression (get-declare-value statement) environment) environment))
+        (next (insert (get-declare-var statement) (eval-expression (get-declare-value statement) environment throw) environment))
         (next (insert (get-declare-var statement) 'novalue environment)))))
 
 ; Updates the environment to add a new binding for a variable
 (define interpret-assign
-  (lambda (statement environment next)
-    (next (update (get-assign-lhs statement) (eval-expression (get-assign-rhs statement) environment) environment))))
+  (lambda (statement environment next throw)
+    (next (update (get-assign-lhs statement) (eval-expression (get-assign-rhs statement) environment throw) environment))))
 
 ; We need to check if there is an else condition.  Otherwise, we evaluate the expression and do the right thing.
 (define interpret-if
   (lambda (statement environment return break continue throw next)
     (cond
-      ((eval-expression (get-condition statement) environment) (interpret-statement (get-then statement) environment return break continue throw next))
+      ((eval-expression (get-condition statement) environment throw) (interpret-statement (get-then statement) environment return break continue throw next) throw)
       ((exists-else? statement) (interpret-statement (get-else statement) environment return break continue throw next))
       (else (next environment)))))
 
@@ -69,7 +69,7 @@
 (define interpret-while
   (lambda (statement environment return throw next)
     (letrec ((loop (lambda (condition body environment)
-                     (if (eval-expression condition environment)
+                     (if (eval-expression condition environment throw)
                          (interpret-statement body environment return (lambda (env) (next env)) (lambda (env) (loop condition body env)) throw (lambda (env) (loop condition body env)))
                          (next environment)))))
       (loop (get-condition statement) (get-body statement) environment))))
@@ -88,7 +88,7 @@
 ; We use a continuation to throw the proper value.  Because we are not using boxes, the environment/state must be thrown as well so any environment changes will be kept
 (define interpret-throw
   (lambda (statement environment throw)
-    (throw (eval-expression (get-expr statement) environment) environment)))
+    (throw (eval-expression (get-expr statement) environment throw) environment)))
 
 ; Interpret a try-catch-finally block
 
@@ -135,99 +135,99 @@
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
 (define eval-expression
-  (lambda (expr enviroment)
-    (eval-expression-cps expr enviroment (lambda (v) v))))
+  (lambda (expr enviroment throw)
+    (eval-expression-cps expr enviroment throw (lambda (v) v))))
 
 (define eval-expression-cps
-  (lambda (expr environment return)
+  (lambda (expr environment throw return)
     (cond
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
       ((not (list? expr)) (return (lookup expr environment)))
-      (else (return (eval-operator expr environment))))))
+      (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
 ; pass the result to eval-binary-op2 to evaluate the right operand.  This forces the operands to be evaluated in the proper order in case you choose
 ; to add side effects to the interpreter
 (define eval-operator
-  (lambda (expr enviroment)
-    (eval-operator-cps expr enviroment (lambda (v) v))))
+  (lambda (expr enviroment throw)
+    (eval-operator-cps expr enviroment throw (lambda (v) v))))
 
 (define eval-operator-cps 
-  (lambda (expr environment return)
+  (lambda (expr environment throw return)
     (cond
       ((eq? '! (operator expr))
-       (eval-expression-cps (operand1 expr) environment
+       (eval-expression-cps (operand1 expr) environment throw
                         (lambda (r-op1)
                           (return (not r-op1)))))
       ((and (eq? '- (operator expr)) (= 2 (length expr)))
-       (eval-expression-cps (operand1 expr) environment
+       (eval-expression-cps (operand1 expr) environment throw
                         (lambda (r-op1)
                           (return (- r-op1)))))
       (else
-       (eval-expression-cps (operand1 expr) environment
+       (eval-expression-cps (operand1 expr) environment throw
                         (lambda (r-op1)
-                          (return (eval-binary-op2 expr r-op1 environment))))))))
+                          (return (eval-binary-op2 expr r-op1 environment throw))))))))
 
 ; Complete the evaluation of the binary operator by evaluating the second operand and performing the operation.
 (define eval-binary-op2
-  (lambda (expr op1value enviroment)
-    (eval-binary-op2-cps expr op1value enviroment (lambda (v) v))))
+  (lambda (expr op1value enviroment throw)
+    (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v))))
 
 (define eval-binary-op2-cps
-  (lambda (expr op1value environment return)
+  (lambda (expr op1value environment throw return)
     (cond
       ((eq? '+ (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (+ op1value r-op2)))))
       ((eq? '- (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (- op1value r-op2)))))
       ((eq? '* (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (* op1value r-op2)))))      
-      ((eq? '/ (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+      ((eq? '/ (operator expr)) 
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (quotient op1value r-op2)))))
       ((eq? '% (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (remainder op1value r-op2)))))
       ((eq? '== (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (isequal op1value r-op2)))))
       ((eq? '!= (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (not(isequal op1value r-op2))))))
       ((eq? '< (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (< op1value r-op2)))))
       ((eq? '> (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (> op1value r-op2)))))
       ((eq? '<= (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (<= op1value r-op2)))))
       ((eq? '>= (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (>= op1value r-op2)))))
       ((eq? '|| (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (or op1value r-op2)))))
       ((eq? '&& (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (and op1value r-op2)))))
       (else
@@ -451,14 +451,17 @@
 
 
 
+(interpret "tests/test6.bad")
+
+
 (check-equal? (interpret "tests/test1.bad") 150)
 (check-equal? (interpret "tests/test2.bad") -4)
 (check-equal? (interpret "tests/test3.bad") 10)
 (check-equal? (interpret "tests/test4.bad") 16)
 (check-equal? (interpret "tests/test5.bad") 220)
-(check-equal? (interpret "tests/test6.bad") 5)
+(check-equal? (interpret "tests/test6.bad") 5) ; fail
 (check-equal? (interpret "tests/test7.bad") 6)
-(check-equal? (interpret "tests/test8.bad") 10)
+(check-equal? (interpret "tests/test8.bad") 10) ; fail
 (check-equal? (interpret "tests/test9.bad") 5)
 (check-equal? (interpret "tests/test10.bad") -39)
 (check-exn
@@ -470,8 +473,8 @@
 (check-exn
    exn:fail? (lambda () (interpret "tests/test14.bad")))
 (check-equal? (interpret "tests/test15.bad") 'true)
-(check-equal? (interpret "tests/test16.bad") 100)
-(check-equal? (interpret "tests/test17.bad") 'false)
+(check-equal? (interpret "tests/test16.bad") 100) ; fail
+(check-equal? (interpret "tests/test17.bad") 'false) ; fail
 (check-equal? (interpret "tests/test18.bad") 'true)
 (check-equal? (interpret "tests/test19.bad") 128)
 (check-equal? (interpret "tests/test20.bad") 12)
@@ -481,21 +484,21 @@
 (check-equal? (interpret "tests/p2_t1.bad") 20)
 (check-equal? (interpret "tests/p2_t2.bad") 164) 
 (check-equal? (interpret "tests/p2_t3.bad") 32)
-(check-equal? (interpret "tests/p2_t4.bad") 2) 
+(check-equal? (interpret "tests/p2_t4.bad") 2)  ; fail
 (check-equal? (interpret "tests/p2_t5.bad") 'error)
 (check-equal? (interpret "tests/p2_t6.bad") 25)
-(check-equal? (interpret "tests/p2_t7.bad") 21)
+(check-equal? (interpret "tests/p2_t7.bad") 21) ; fail
 (check-equal? (interpret "tests/p2_t8.bad") 6)
 (check-equal? (interpret "tests/p2_t9.bad") -1)
-(check-equal? (interpret "tests/p2_t10.bad") 789)
+(check-equal? (interpret "tests/p2_t10.bad") 789) ; fail
 (check-equal? (interpret "tests/p2_t11.bad") 'error)
 (check-equal? (interpret "tests/p2_t12.bad") 'error)
 (check-equal? (interpret "tests/p2_t13.bad") 'error)
-(check-equal? (interpret "tests/p2_t14.bad") 12)
+(check-equal? (interpret "tests/p2_t14.bad") 12) ; fail
 (check-equal? (interpret "tests/p2_t15.bad") 125)
-(check-equal? (interpret "tests/p2_t16.bad") 110)
-(check-equal? (interpret "tests/p2_t17.bad") 2000400)
-(check-equal? (interpret "tests/p2_t18.bad") 101)
+(check-equal? (interpret "tests/p2_t16.bad") 110) ; fail
+(check-equal? (interpret "tests/p2_t17.bad") 2000400) ; fail
+(check-equal? (interpret "tests/p2_t18.bad") 101) ; fail
 (check-equal? (interpret "tests/p2_t19.bad") 'error)
 (check-equal? (interpret "tests/p2_tNestedTry.bad") 18002)
 (check-equal? (interpret "tests/p2_tNestedTry2.bad") 0)
