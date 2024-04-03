@@ -217,7 +217,8 @@
 ; create an empty frame: a frame is two lists, the first are the variables and the second is the "store" of values
 (define newframe
   (lambda ()
-    '(() ())))
+    '(() ())
+    ))
 
 ; add a frame onto the top of the environment
 (define push-frame
@@ -232,13 +233,6 @@
 ; some abstractions
 (define topframe car)
 (define remainingframes cdr)
-
-
-
-; Because the error function is not defined in R5RS scheme, I create my own:
-(define error-break (lambda (v) v))
-(call-with-current-continuation (lambda (k) (set! error-break k)))
-
 
 
 (define language->scheme

@@ -4,7 +4,7 @@
 (require "utils.rkt")
 
 ; (<op> <int exp> <int exp>) OR (<op> <int exp>)
-(define (M_int ls state return)
+(define (M_int-nr ls state return)
   (cond
     ((number? ls)           ls)
     ((atom? ls)             (lookup ls state))
@@ -21,6 +21,53 @@
     ((eq? (operator ls) '%) (remainder (M_int (leftoperand ls) state return)
                                        (M_int (rightoperand ls) state return)))
     (else                   'error)))
+
+
+; M_int recursive
+(define M_int
+  (lambda (ls state return)
+    (M_int_cps ls state (lambda (v) v))))
+
+(define (M_int_cps ls state return)
+  (cond
+    ((number? ls) (return ls))
+    ((atom? ls) (return (lookup ls state)))
+    ((and (eq? (operator ls) '-) (null? (rightside ls)))
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left) (return (* r-left -1)))))
+    ((eq? (operator ls) '+)
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left)
+              (M_int_cps (rightoperand ls) state
+                     (lambda (r-right)
+                       (return (+ r-left r-right)))))))
+    ((eq? (operator ls) '-)
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left)
+              (M_int_cps (rightoperand ls) state
+                     (lambda (r-right)
+                       (return (- r-left r-right)))))))
+    ((eq? (operator ls) '*)
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left)
+              (M_int_cps (rightoperand ls) state
+                     (lambda (r-right)
+                       (return (* r-left r-right)))))))
+    ((eq? (operator ls) '/)
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left)
+              (M_int_cps (rightoperand ls) state
+                     (lambda (r-right)
+                       (return (quotient r-left r-right)))))))
+    ((eq? (operator ls) '%)
+     (M_int_cps (leftoperand ls) state
+            (lambda (r-left)
+              (M_int_cps (rightoperand ls) state
+                     (lambda (r-right)
+                       (return (remainder r-left r-right)))))))
+    (else (return 'error))))
+
+
 
 ;(<op> <bool exp> <bool exp>) OR (<op> <bool exp>)
 (define (M_bool ls state return)
@@ -72,6 +119,8 @@
                                            (M_int (rightoperand ls) state return)))) 'false)
     (else 'error)))
 
+
+
 ; Given some arbitrary expression, determine the value of the expression
 (define (M_value ls state return)
   (cond
@@ -85,3 +134,4 @@
     ; For handling cases like (M_bool '((false)) state), without this line just gives error
     ((list? ls) (M_value (car ls) state return))
     (else 'error)))
+
