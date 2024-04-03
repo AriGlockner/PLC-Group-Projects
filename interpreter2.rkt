@@ -15,7 +15,7 @@
 (define interpret
   (lambda (file)
     (scheme->language
-     (interpret-statement-list (parser file) (newenvironment) (lambda (v) v)
+     (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
                                (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                                (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env)))))
 
@@ -40,7 +40,7 @@
       ((eq? 'begin (statement-type statement)) (interpret-block statement environment return break continue throw next))
       ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
       ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
-      (else (myerror "Unknown statement:" (statement-type statement))))))
+      (else (myerror "Unknown statement:" (statement-type statement))))))  
 
 ; Calls the return continuation with the given expression value
 (define interpret-return
@@ -226,20 +226,26 @@
 ; Environment/State Functions
 ;------------------------
 
-; create a new empty environment
+; Creates a new environment for a function from the global variables and the parameters
 (define newenvironment
+  (lambda (global params)
+    (list (car params) (car global))
+  ))
+
+; create a new empty environment
+(define initenvironment
   (lambda ()
-    (list (newframe))))
+    (list (emptyframe))))
 
 ; create an empty frame: a frame is two lists, the first are the variables and the second is the "store" of values
-(define newframe
+(define emptyframe
   (lambda ()
     '(() ())))
 
 ; add a frame onto the top of the environment
 (define push-frame
   (lambda (environment)
-    (cons (newframe) environment)))
+    (cons (emptyframe) environment)))
 
 ; remove a frame from the environment
 (define pop-frame
@@ -387,3 +393,12 @@
                             str
                             (makestr (string-append str (string-append " " (symbol->string (car vals)))) (cdr vals))))))
       (error-break (display (string-append (string-append str (makestr "" vals)) "\n"))))))
+
+
+
+(display "Start Debugging:\n")
+
+; Test environments
+(define global_var '((() ())))
+(define params '((() ())))
+(check-equal? (newenvironment (insert 'a 10 global_var) (insert 'a 1 (insert 'b 5 params))) '(((a b) (#&1 #&5)) ((a) (#&10))))
