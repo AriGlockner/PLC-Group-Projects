@@ -43,25 +43,25 @@
 ; Calls the return continuation with the given expression value
 (define interpret-return
   (lambda (statement environment return)
-    (return (eval-expression (get-expr statement) environment))))
+    (return (eval-expression (get-expr statement) environment (lambda (thrw) thrw)))))
 
 ; Adds a new variable binding to the environment.  There may be an assignment with the variable
 (define interpret-declare
   (lambda (statement environment next)
     (if (exists-declare-value? statement)
-        (next (insert (get-declare-var statement) (eval-expression (get-declare-value statement) environment) environment))
+        (next (insert (get-declare-var statement) (eval-expression (get-declare-value statement) environment (lambda (thrw) thrw)) environment))
         (next (insert (get-declare-var statement) 'novalue environment)))))
 
 ; Updates the environment to add a new binding for a variable
 (define interpret-assign
   (lambda (statement environment next)
-    (next (update (get-assign-lhs statement) (eval-expression (get-assign-rhs statement) environment) environment))))
+    (next (update (get-assign-lhs statement) (eval-expression (get-assign-rhs statement) environment (lambda (thrw) thrw)) environment))))
 
 ; We need to check if there is an else condition.  Otherwise, we evaluate the expression and do the right thing.
 (define interpret-if
   (lambda (statement environment return break continue throw next)
     (cond
-      ((eval-expression (get-condition statement) environment) (interpret-statement (get-then statement) environment return break continue throw next))
+      ((eval-expression (get-condition statement) environment (lambda (thrw) thrw)) (interpret-statement (get-then statement) environment return break continue throw next))
       ((exists-else? statement) (interpret-statement (get-else statement) environment return break continue throw next))
       (else (next environment)))))
 
@@ -69,7 +69,7 @@
 (define interpret-while
   (lambda (statement environment return throw next)
     (letrec ((loop (lambda (condition body environment)
-                     (if (eval-expression condition environment)
+                     (if (eval-expression condition environment (lambda (thrw) thrw))
                          (interpret-statement body environment return (lambda (env) (next env)) (lambda (env) (loop condition body env)) throw (lambda (env) (loop condition body env)))
                          (next environment)))))
       (loop (get-condition statement) (get-body statement) environment))))
@@ -88,7 +88,7 @@
 ; We use a continuation to throw the proper value.  Because we are not using boxes, the environment/state must be thrown as well so any environment changes will be kept
 (define interpret-throw
   (lambda (statement environment throw)
-    (throw (eval-expression (get-expr statement) environment) environment)))
+    (throw (eval-expression (get-expr statement) environment (lambda (thrw) thrw)) environment)))
 
 ; Interpret a try-catch-finally block
 
@@ -135,99 +135,99 @@
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
 (define eval-expression
-  (lambda (expr enviroment)
-    (eval-expression-cps expr enviroment (lambda (v) v))))
+  (lambda (expr enviroment throw)
+    (eval-expression-cps expr enviroment throw (lambda (v) v))))
 
 (define eval-expression-cps
-  (lambda (expr environment return)
+  (lambda (expr environment throw return)
     (cond
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
       ((not (list? expr)) (return (lookup expr environment)))
-      (else (return (eval-operator expr environment))))))
+      (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
 ; pass the result to eval-binary-op2 to evaluate the right operand.  This forces the operands to be evaluated in the proper order in case you choose
 ; to add side effects to the interpreter
 (define eval-operator
-  (lambda (expr enviroment)
-    (eval-operator-cps expr enviroment (lambda (v) v))))
+  (lambda (expr enviroment throw)
+    (eval-operator-cps expr enviroment throw (lambda (v) v))))
 
 (define eval-operator-cps 
-  (lambda (expr environment return)
+  (lambda (expr environment throw return)
     (cond
       ((eq? '! (operator expr))
-       (eval-expression-cps (operand1 expr) environment
+       (eval-expression-cps (operand1 expr) environment throw
                         (lambda (r-op1)
                           (return (not r-op1)))))
       ((and (eq? '- (operator expr)) (= 2 (length expr)))
-       (eval-expression-cps (operand1 expr) environment
+       (eval-expression-cps (operand1 expr) environment throw
                         (lambda (r-op1)
                           (return (- r-op1)))))
       (else
-       (eval-expression-cps (operand1 expr) environment
+       (eval-expression-cps (operand1 expr) environment throw
                         (lambda (r-op1)
-                          (return (eval-binary-op2 expr r-op1 environment))))))))
+                          (return (eval-binary-op2 expr r-op1 environment throw))))))))
 
 ; Complete the evaluation of the binary operator by evaluating the second operand and performing the operation.
 (define eval-binary-op2
-  (lambda (expr op1value enviroment)
-    (eval-binary-op2-cps expr op1value enviroment (lambda (v) v))))
+  (lambda (expr op1value enviroment throw)
+    (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v))))
 
 (define eval-binary-op2-cps
-  (lambda (expr op1value environment return)
+  (lambda (expr op1value environment throw return)
     (cond
       ((eq? '+ (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (+ op1value r-op2)))))
       ((eq? '- (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (- op1value r-op2)))))
       ((eq? '* (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (* op1value r-op2)))))      
       ((eq? '/ (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (quotient op1value r-op2)))))
       ((eq? '% (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (remainder op1value r-op2)))))
       ((eq? '== (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (isequal op1value r-op2)))))
       ((eq? '!= (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (not(isequal op1value r-op2))))))
       ((eq? '< (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (< op1value r-op2)))))
       ((eq? '> (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (> op1value r-op2)))))
       ((eq? '<= (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (<= op1value r-op2)))))
       ((eq? '>= (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (>= op1value r-op2)))))
       ((eq? '|| (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (or op1value r-op2)))))
       ((eq? '&& (operator expr))
-       (eval-expression-cps (operand2 expr) environment
+       (eval-expression-cps (operand2 expr) environment throw
                         (lambda (r-op2)
                           (return (and op1value r-op2)))))
       (else
