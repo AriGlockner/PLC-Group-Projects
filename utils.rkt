@@ -83,190 +83,181 @@
 
 
 
+;-----------------
+; HELPER FUNCTIONS
+;-----------------
+
+; These helper functions define the operator and operands of a value expression
+(define operand1 cadr)
+(define operand2 caddr)
+(define operand3 cadddr)
+
+(define exists-operand2?
+  (lambda (statement)
+    (not (null? (cddr statement)))))
+
+(define exists-operand3?
+  (lambda (statement)
+    (not (null? (cdddr statement)))))
+
+; these helper functions define the parts of the various statement types
+(define statement-type operator)
+(define get-expr operand1)
+(define get-declare-var operand1)
+(define get-declare-value operand2)
+(define exists-declare-value? exists-operand2?)
+(define get-assign-lhs operand1)
+(define get-assign-rhs operand2)
+(define get-condition operand1)
+(define get-then operand2)
+(define get-else operand3)
+(define get-body operand2)
+(define exists-else? exists-operand3?)
+(define get-try operand1)
+(define get-catch operand2)
+(define get-finally operand3)
+
+
+; does a variable exist in the environment?
+(define exists?
+  (lambda (var environment)
+    (cond
+      ((null? environment) #f)
+      ((exists-in-list? var (variables (topframe environment))) #t)
+      (else (exists? var (remainingframes environment))))))
+
+
+
+; does a variable exist in a list?
+(define exists-in-list?
+  (lambda (var l)
+    (cond
+      ((null? l) #f)
+      ((eq? var (car l)) #t)
+      (else (exists-in-list? var (cdr l))))))
+
+
+; Returns the list of variables from a frame
+(define variables
+  (lambda (frame)
+    (car frame)))
+
+
+(define catch-var
+  (lambda (catch-statement)
+    (car (operand1 catch-statement))))
+
+
+;------------------------
+; Environment/State Functions
+;------------------------
+
+; create a new empty environment
+(define newenvironment
+  (lambda ()
+    (list (newframe))))
+
+; create an empty frame: a frame is two lists, the first are the variables and the second is the "store" of values
+(define newframe
+  (lambda ()
+    '(() ())))
+
+; add a frame onto the top of the environment
+(define push-frame
+  (lambda (environment)
+    (cons (newframe) environment)))
+
+; remove a frame from the environment
+(define pop-frame
+  (lambda (environment)
+    (cdr environment)))
+
+; some abstractions
+(define topframe car)
+(define remainingframes cdr)
+
+
+
+; Because the error function is not defined in R5RS scheme, I create my own:
+(define error-break (lambda (v) v))
+(call-with-current-continuation (lambda (k) (set! error-break k)))
+
+
+
+(define language->scheme
+  (lambda (v) 
+    (cond 
+      ((eq? v 'false) #f)
+      ((eq? v 'true) #t)
+      (else v))))
+
+(define scheme->language
+  (lambda (v)
+    (cond
+      ((eq? v #f) 'false)
+      ((eq? v #t) 'true)
+      (else v))))
+
+
+; Returns the store from a frame
+(define store
+  (lambda (frame)
+    (cadr frame)))
+
+
+
+(define myerror
+  (lambda (str . vals)
+    (letrec ((makestr (lambda (str vals)
+                        (if (null? vals)
+                            str
+                            (makestr (string-append str (string-append " " (symbol->string (car vals)))) (cdr vals))))))
+      (error-break (display (string-append (string-append str (makestr "" vals)) "\n"))))))
+
+
+
+
+
+
 
 (define update-binding
-  (lambda (var newvalue state)
-    (call/cc
-     (lambda (end)
-       (display "\nstate: ")
-       (display state)
-       (display "\n looking for: ")
-       (display var)
-       (display "\n will be setting it to: ")
-       (display newvalue)
-       
-   ;    (let ((result (update-binding-O var newvalue state state)))
-    ;     (display "\nresult:")
-    ;     (display result)
-    ;     (end result)
-
-
-         (let ((result (update-binding-helper var newvalue (car state) (car state))))
-         (display "\nresult:")
-         (display result)
-           (cond
-            ; ((eq? state '()) (error "state is empty in the update-binding"))
-            ;; ((eq? state '()) (end state))
-             ((eq? result #f)
-             ; (display "ZOOWEEMAMAMA")
-            ;  (display (cons (car state) (update-binding var newvalue (cdr state))))
-              (end (cons (car state) (update-binding var newvalue (cdr state))))
-              )
-             (else
-              (end (list result)))
-             )
-
-
-         )))))
-
-
-(define update-binding-helper
-  (lambda (var newvalue state end)
-    (cond
-      ((equal? state '((()()))) (error "state is empty"))
-      ((null? state)
-       (display "yo gabba")
-       (display state)
-       #f
-       )
-   ;   ((eq? '() (cdr state))
-   ;    (display "cdr is null!")
-   ;    (update-binding-helper var newvalue (car state) end)
-   ;    )
-      
-      
-      ((atom? (car state)) (update-binding-helper var newvalue (cdr state) end))
-      ((null? (car state)) (update-binding-helper var newvalue (remove-layer state) end))
-      ((eq? var (caar state))
-     ;  (display  (caadr state))
-       (begin (set-box! (caadr state) newvalue) end))
-      (else
-      ; (display state)
-       (update-binding-helper var newvalue (cons (cdar state) (cons (cdadr state) (cddr state))) end)
-       )
-      )))
-
-
-; (((z y) (#&20 #&2)) ((x) (#&10)))
-; (((m y x) (#&null #&6 #&5)))
-
-
-
-
-
-
-
-
-; update binding
-(define update-binding-O
-  (lambda (name newvalue state end)
-    (cond
-      ((null? state)
-       (error "state should not be empty"))
-      ((list? (car state))
-       (let ((result (update-binding-helper-O (caar state) (cadar state) name newvalue end state (lambda (v1 v2 v3) (cons v1 (list v2))))))
-         (if (eq? (update-binding-helper-O (caar state) (cadar state) name newvalue end state (lambda (v1 v2 v3) v3)) 'notfound)
-             (cons (car state) (update-binding-O name newvalue (cdr state) end)) ; continue searching the rest of the state
-             (cons result (cdr state))))) ; return the value if found
-    (else (error "state is bad")))))
-
-(define update-binding-helper-O
-  (lambda (vars keys value newvalue end state return)
-    (cond
-      ((or (null? vars) (null? keys)) (return '() '() 'notfound))
-      ((eq? (car vars) value)
-     ;  (display "yoyoyoyo")
-      ; (display (caadar state))
-       (update-binding-helper-O (cdr vars) (cdr keys) value newvalue end state
-                              (lambda (r-vars r-keys status)
-                                (return (cons value r-vars) (cons (begin (set-box! (caadar state) newvalue) end) r-keys) 'found))))
-      (else 
-       (update-binding-helper-O (cdr vars) (cdr keys) value newvalue end state
-                              (lambda (r-vars r-keys status)
-                                (return (cons (car vars) r-vars) (cons (car keys) r-keys) status)))))))
-
-
-
-
-
-
-
-
-
-; update binding
-(define update-binding-ORIGINAL
   (lambda (name newvalue state)
+    (update name newvalue state)))
+
+
+; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
+(define update
+  (lambda (var val environment)
+    (if (exists? var environment)
+        (update-existing var val environment)
+        (myerror "error: variable used but not defined:" var))))
+
+; Add a new variable/value pair to the frame.
+(define add-to-frame
+  (lambda (var val frame)
+    (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame)))))
+
+; Changes the binding of a variable in the environment to a new value
+(define update-existing
+  (lambda (var val environment)
+    ;(display environment)
+    (if (exists-in-list? var (variables (car environment)))
+        (cons (update-in-frame var val (topframe environment)) (remainingframes environment))
+        (cons (topframe environment) (update-existing var val (remainingframes environment))))))
+
+; Changes the binding of a variable in the frame to a new value.
+(define update-in-frame
+  (lambda (var val frame)
+    (list (variables frame) (update-in-frame-store var val (variables frame) (store frame)))))
+
+; Changes a variable binding by placing the new value in the appropriate place in the store
+(define update-in-frame-store
+  (lambda (var val varlist vallist)
     (cond
-      ((null? state)
-       (error "state should not be empty"))
-      ((list? (car state))
-       (let ((result (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) (cons v1 (list v2))))))
-         (if (eq? (update-binding-helper (caar state) (cadar state) name newvalue (lambda (v1 v2 v3) v3)) 'notfound)
-             (cons (car state) (update-binding name newvalue (cdr state))) ; continue searching the rest of the state
-             (cons result (cdr state))))) ; return the value if found
-    (else (error "state is bad")))))
-
-(define update-binding-helper-ORIGINAL
-  (lambda (vars keys value newvalue return)
-    (cond
-      ((or (null? vars) (null? keys)) (return '() '() 'notfound))
-      ((eq? (car vars) value) 
-       (update-binding-helper (cdr vars) (cdr keys) value newvalue
-                              (lambda (r-vars r-keys status)
-                                (return (cons value r-vars) (cons newvalue r-keys) 'found))))
-      (else 
-       (update-binding-helper (cdr vars) (cdr keys) value newvalue
-                              (lambda (r-vars r-keys status)
-                                (return (cons (car vars) r-vars) (cons (car keys) r-keys) status)))))))
+      ((eq? var (car varlist)) (begin (set-box! (car vallist) (scheme->language val)) vallist))
+      (else (cons (car vallist) (update-in-frame-store var val (cdr varlist) (cdr vallist)))))))
 
 
-
-
-
-
-; update binding
-(define update-binding-xx
-  (lambda (name newvalue state)
-    (cond
-      ((null? state)
-       (error "state should not be empty"))
-      ((list? (car state))
-       (let ((result (update-binding-helper (caar state) (cadar state) name newvalue state (lambda (v1 v2 v3) (cons v1 (list v2))))))
-         (cond
-           ((eq? (update-binding-helper (caar state) (cadar state) name newvalue state (lambda (v1 v2 v3) v3)) 'notfound)
-             (cons (car state) (update-binding name newvalue (cdr state)))) ; continue searching the rest of the state
-           (else ; return the value if found
-           ; (display state)
-            (cons result (cdr state)))
-           )))
-    (else (error "state is bad")))))
-
-(define update-binding-helper-xx
-  (lambda (vars keys value newvalue state return)
-    (cond
-      ((or (null? vars) (null? keys)) (return '() '() 'notfound))
-      ((eq? (car vars) value) 
-       (update-binding-helper (cdr vars) (cdr keys) value newvalue state
-                              (lambda (r-vars r-keys status)
-                              ;;  (display "\n yo mama\n")
-                               ;;(display (lookup value state))
-                                
-                             ;;   (display (caadar state))
-                               ;; (display (unbox (car keys)))
-                                ;;(display newvalue)
-                              ;;  (display (set-box! (car keys) newvalue))
-                              ;;  (display (unbox (caadar state)))
-                              ;; (display (unbox
-                                       ;;  (begin (set-box! (caadar state) newvalue) )
-                                     ;;          ))
-
-                                
-                                
-                                (return (cons value r-vars) (cons (begin (set-box! (caadar state) newvalue) #t) r-keys) 'found))))
-      (else 
-       (update-binding-helper (cdr vars) (cdr keys) value newvalue state
-                              (lambda (r-vars r-keys status)
-                                (return (cons (car vars) r-vars) (cons (car keys) r-keys) status)))))))
 
 
 
