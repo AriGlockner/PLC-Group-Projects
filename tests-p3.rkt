@@ -28,7 +28,7 @@
 
 
 ;(interpret "tests/p2_t11.bad")
-;(interpret "tests/p2_t12.bad")
+;(interpret "tests/p2_t12.bad") ; fine now i guess
 (interpret "tests/p2_t17.bad")
 
 

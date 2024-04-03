@@ -67,7 +67,9 @@
   (lambda (layers)
     (cond
       ((null? layers) null)
+      ((eq? layers 'error) (error "error"))
       (else
+       (display layers)
        (cdr layers)))))
 
 ; Add Binding to the state
@@ -90,6 +92,8 @@
        (display state)
        (display "\n looking for: ")
        (display var)
+       (display "\n will be setting it to: ")
+       (display newvalue)
        
    ;    (let ((result (update-binding-O var newvalue state state)))
     ;     (display "\nresult:")
