@@ -28,9 +28,9 @@
 (define interpret-statement
   (lambda (statement environment return break continue throw next)
     (cond
-      ((eq? 'return (statement-type statement)) (interpret-return statement environment return))
-      ((eq? 'var (statement-type statement)) (interpret-declare statement environment next))
-      ((eq? '= (statement-type statement)) (interpret-assign statement environment next))
+      ((eq? 'return (statement-type statement)) (interpret-return statement environment return throw))
+      ((eq? 'var (statement-type statement)) (interpret-declare statement environment next throw))
+      ((eq? '= (statement-type statement)) (interpret-assign statement environment next throw))
       ((eq? 'if (statement-type statement)) (interpret-if statement environment return break continue throw next))
       ((eq? 'while (statement-type statement)) (interpret-while statement environment return throw next))
       ((eq? 'continue (statement-type statement)) (continue environment))
@@ -42,20 +42,20 @@
 
 ; Calls the return continuation with the given expression value
 (define interpret-return
-  (lambda (statement environment return)
-    (return (eval-expression (get-expr statement) environment (lambda (thrw) thrw)))))  ;;;; HERE
+  (lambda (statement environment return throw)
+    (return (eval-expression (get-expr statement) environment throw))))  ;;;; HERE
 
 ; Adds a new variable binding to the environment.  There may be an assignment with the variable
 (define interpret-declare
-  (lambda (statement environment next)
+  (lambda (statement environment next throw)
     (if (exists-declare-value? statement)
-        (next (insert (get-declare-var statement) (eval-expression (get-declare-value statement) environment (lambda (thrw) thrw)) environment)) ;;;; HERE
+        (next (insert (get-declare-var statement) (eval-expression (get-declare-value statement) environment throw) environment)) ;;;; HERE
         (next (insert (get-declare-var statement) 'novalue environment)))))
 
 ; Updates the environment to add a new binding for a variable
 (define interpret-assign
-  (lambda (statement environment next)
-    (next (update (get-assign-lhs statement) (eval-expression (get-assign-rhs statement) environment (lambda (thrw) thrw)) environment)))) ;;;; HERE
+  (lambda (statement environment next throw)
+    (next (update (get-assign-lhs statement) (eval-expression (get-assign-rhs statement) environment throw) environment)))) ;;;; HERE
 
 ; We need to check if there is an else condition.  Otherwise, we evaluate the expression and do the right thing.
 (define interpret-if
