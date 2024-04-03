@@ -5,6 +5,9 @@
 (require "utils.rkt")
 (require "valueFunctions.rkt")
 
+; Globally defined items
+(define global '((a) (1)))
+
 ; given an arbitrary expression, determine the state of the program after the expression
 ; (first, needs to make sure we set next properly (or leave it alone) and whatnot
 (define (M_state exp state return next break continue throw)
@@ -29,6 +32,19 @@
     )
   )
 
+; Environment
+(define (M_environment env params)
+  ; If params is empty -> return env
+  ; Otherwise -> move 1st param to env and call M_environment on the new env/params
+  ; If variable exists -> assign variable value in params
+  ; Otherwise -> declare variable in env
+  (display global)
+  (display params)
+  (cond
+    ((null? (car params)) env)
+    (else env)
+    )
+  )
 
 ; block statements
 (define (M_state_block ls state return next break continue throw)

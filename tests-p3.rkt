@@ -6,7 +6,9 @@
 (require "valueFunctions.rkt")
 (require rackunit)
 
-(define state '(((x y a) (5 12 true))))
+;(define state '(((x y a) (5 12 true))))
+;(define global '((a) (1)))
+(M_environment '(() ()) '((a b) (2 3)))
 
 ; part 3 canvas integration tests
 ;(check-equal? (interpret "tests/p3_t1.bad") 10) ; Fail
