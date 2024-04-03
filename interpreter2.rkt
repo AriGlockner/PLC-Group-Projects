@@ -1,6 +1,6 @@
 ; If you are using scheme instead of racket, comment these two lines, uncomment the (load "simpleParser.scm") and comment the (require "simpleParser.rkt")
 #lang racket
-(require "simpleParser.rkt")
+(require "functionParser.rkt")
 (require rackunit)
 ; (load "simpleParser.scm")
 
@@ -8,6 +8,8 @@
 
 ; The functions that start interpret-...  all return the current environment.  These are the M_state functions.
 ; The functions that start eval-...  all return a value.  These are the M_value and M_boolean functions.
+
+(provide (all-defined-out))
 
 ; The main function.  Calls parser to get the parse tree and interprets it with a new environment.  Sets default continuations for return, break, continue, throw, and "next statement"
 (define interpret
@@ -385,26 +387,3 @@
                             str
                             (makestr (string-append str (string-append " " (symbol->string (car vals)))) (cdr vals))))))
       (error-break (display (string-append (string-append str (makestr "" vals)) "\n"))))))
-
-
-(check-equal? (interpret "tests/p2_t1.bad") 20)
-(check-equal? (interpret "tests/p2_t2.bad") 164) 
-(check-equal? (interpret "tests/p2_t3.bad") 32)
-(check-equal? (interpret "tests/p2_t4.bad") 2) 
-(check-equal? (interpret "tests/p2_t5.bad") 'error)
-(check-equal? (interpret "tests/p2_t6.bad") 25)
-(check-equal? (interpret "tests/p2_t7.bad") 21)
-(check-equal? (interpret "tests/p2_t8.bad") 6)
-(check-equal? (interpret "tests/p2_t9.bad") -1)
-(check-equal? (interpret "tests/p2_t10.bad") 789)
-(check-equal? (interpret "tests/p2_t11.bad") 'error)
-(check-equal? (interpret "tests/p2_t12.bad") 'error)
-(check-equal? (interpret "tests/p2_t13.bad") 'error)
-(check-equal? (interpret "tests/p2_t14.bad") 12)
-(check-equal? (interpret "tests/p2_t15.bad") 125)
-(check-equal? (interpret "tests/p2_t16.bad") 110)
-(check-equal? (interpret "tests/p2_t17.bad") 2000400)
-(check-equal? (interpret "tests/p2_t18.bad") 101)
-(check-equal? (interpret "tests/p2_t19.bad") 'error)
-(check-equal? (interpret "tests/p2_tNestedTry.bad") 18002)
-(check-equal? (interpret "tests/p2_tNestedTry2.bad") 0)
