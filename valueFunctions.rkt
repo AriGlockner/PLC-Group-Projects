@@ -10,16 +10,7 @@
     ((atom? ls)             (lookup ls state))
     ((and (eq? (operator ls) '-) (null? (rightside ls)))
      (* (M_int (leftoperand ls) state return) -1))
-    ((eq? (operator ls) '+)
-
-     (display "\nwe are now adding")
-     (display (leftoperand ls))
-     (display ls)
-     (display state)
-
-
-
-     (+ (M_int (leftoperand ls) state return)
+    ((eq? (operator ls) '+) (+ (M_int (leftoperand ls) state return)
                                (M_int (rightoperand ls) state return)))
     ((eq? (operator ls) '-) (- (M_int (leftoperand ls) state return)
                                (M_int (rightoperand ls) state return)))

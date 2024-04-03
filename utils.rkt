@@ -69,7 +69,6 @@
       ((null? layers) null)
       ((eq? layers 'error) (error "error"))
       (else
-       (display layers)
        (cdr layers)))))
 
 ; Add Binding to the state
@@ -80,6 +79,64 @@
       (cons (cons (cons name (caar state)) (list (cons (box value) (cadar state)))) (cdr state)))))
 
 
+; main update binding
+(define update-binding
+  (lambda (name newvalue state)
+    (update name newvalue state)))
+
+; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
+(define update
+  (lambda (var val environment)
+    (if (exists? var environment)
+        (update-existing var val environment)
+        (error "error: variable used but not defined:"))))
+
+; Add a new variable/value pair to the frame.
+(define add-to-frame
+  (lambda (var val frame)
+    (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame)))))
+
+; Changes the binding of a variable in the environment to a new value
+(define update-existing
+  (lambda (var val environment)
+    ;(display environment)
+    (if (exists-in-list? var (variables (car environment)))
+        (cons (update-in-frame var val (topframe environment)) (remainingframes environment))
+        (cons (topframe environment) (update-existing var val (remainingframes environment))))))
+
+; Changes the binding of a variable in the frame to a new value.
+(define update-in-frame
+  (lambda (var val frame)
+    (list (variables frame) (update-in-frame-store var val (variables frame) (store frame)))))
+
+; Changes a variable binding by placing the new value in the appropriate place in the store
+(define update-in-frame-store
+  (lambda (var val varlist vallist)
+    (cond
+      ((eq? var (car varlist))
+       (begin (set-box! (car vallist) (scheme->language val)) vallist))
+      (else (cons (car vallist) (update-in-frame-store var val (cdr varlist) (cdr vallist)))))))
+
+; verify the state has multiple layers
+(define check_break
+  (lambda (state)
+    (cond
+      ((null? state) 'error) ; state has no layers
+      ((null? (cdr state)) 'error) ; state is only one layer
+      (else state)))) ;; state has multiple layers
+
+; add 'begin to try
+(define add_begin_try
+  (lambda (exp)
+    (cons 'begin exp)))
+
+; add 'begin to finally
+(define add_begin_finally
+  (lambda (exp)
+    (cond
+      ((null? exp) '(begin))
+      ((not (eq? (car exp) 'finally)) (error "bad finally"))
+      (else (cons 'begin (cadr exp))))))
 
 
 
@@ -203,84 +260,3 @@
 (define store
   (lambda (frame)
     (cadr frame)))
-
-
-
-(define myerror
-  (lambda (str . vals)
-    (letrec ((makestr (lambda (str vals)
-                        (if (null? vals)
-                            str
-                            (makestr (string-append str (string-append " " (symbol->string (car vals)))) (cdr vals))))))
-      (error-break (display (string-append (string-append str (makestr "" vals)) "\n"))))))
-
-
-
-
-
-
-
-(define update-binding
-  (lambda (name newvalue state)
-    (update name newvalue state)))
-
-
-; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
-(define update
-  (lambda (var val environment)
-    (if (exists? var environment)
-        (update-existing var val environment)
-        (myerror "error: variable used but not defined:" var))))
-
-; Add a new variable/value pair to the frame.
-(define add-to-frame
-  (lambda (var val frame)
-    (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame)))))
-
-; Changes the binding of a variable in the environment to a new value
-(define update-existing
-  (lambda (var val environment)
-    ;(display environment)
-    (if (exists-in-list? var (variables (car environment)))
-        (cons (update-in-frame var val (topframe environment)) (remainingframes environment))
-        (cons (topframe environment) (update-existing var val (remainingframes environment))))))
-
-; Changes the binding of a variable in the frame to a new value.
-(define update-in-frame
-  (lambda (var val frame)
-    (list (variables frame) (update-in-frame-store var val (variables frame) (store frame)))))
-
-; Changes a variable binding by placing the new value in the appropriate place in the store
-(define update-in-frame-store
-  (lambda (var val varlist vallist)
-    (cond
-      ((eq? var (car varlist)) (begin (set-box! (car vallist) (scheme->language val)) vallist))
-      (else (cons (car vallist) (update-in-frame-store var val (cdr varlist) (cdr vallist)))))))
-
-
-
-
-
-
-
-
-; verify the state has multiple layers
-(define check_break
-  (lambda (state)
-    (cond
-      ((null? state) 'error) ; state has no layers
-      ((null? (cdr state)) 'error) ; state is only one layer
-      (else state)))) ;; state has multiple layers
-
-; add 'begin to try
-(define add_begin_try
-  (lambda (exp)
-    (cons 'begin exp)))
-
-; add 'begin to finally
-(define add_begin_finally
-  (lambda (exp)
-    (cond
-      ((null? exp) '(begin))
-      ((not (eq? (car exp) 'finally)) (error "bad finally"))
-      (else (cons 'begin (cadr exp))))))
