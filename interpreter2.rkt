@@ -265,6 +265,11 @@
           (return (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
                                              (insert (car formal-param-list) (eval-expression (car actual-param-list) env) binding) return)))))
 
+; Create the environment for the function
+(define (function-environment current-env actual-param-list formal-param-list)
+  (cons (bind-actual-formal current-env actual-param-list formal-param-list)
+  (get-globals current-env)))
+
 ; creates a binding of the 2 lists
 (define (bind-parameters env actual formal return)
   (cond
@@ -445,3 +450,6 @@
 (define parameter_definitions '(x y z))
 (define parameter_bindings '(a 10 (+ a b)))
 (check-equal? (bind-actual-formal global_var parameter_bindings parameter_definitions) '((z y x) (#&6 #&10 #&1)))
+
+; (function-environment current-env defined-params passed-in-params)
+(check-equal? (function-environment global_var parameter_bindings parameter_definitions) '(((z y x) (#&6 #&10 #&1)) ((a) (#&10))))
