@@ -250,14 +250,11 @@
     ((null? (cdr env)) (return env))
     (else (return (get-globals-cps (cdr env) (lambda (v) v))))))
 
+; Binds the parameters to the values (or value of the expressions) that they are passed in with.
 (define (bind-actual-formal env actual-param-list formal-param-list)
-  (bind-actual-formal-helper env actual-param-list formal-param-list '((() ())) (lambda (v) v)))
-  ;(lambda (v1 v2) (list v1 v2))))
+  (car (bind-actual-formal-helper env actual-param-list formal-param-list '((() ())) (lambda (v) v))))
 
-; (define eval-expression
-;  (lambda (expr environment)
-
-;(insert var val environment)
+; Preforms the bindings for the bind-actual-formal function
 (define (bind-actual-formal-helper env actual-param-list formal-param-list binding return)
   (if (null? actual-param-list)
       (if (null? formal-param-list)
@@ -266,47 +263,7 @@
       (if (null? actual-param-list)
           (error "The formal and actual parameters must match")
           (return (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
-                                             (insert (car formal-param-list) (eval-expression (car actual-param-list) env) binding)
-                                             return)
-                  ))))
-          
-
-          
-;          (let ((v (car formal-param-list))
-;                (result (eval-expression (car actual-param-list) env)))
-;           (display v)
-;            (display result)
-            
-;            (display (insert v result binding))
-;                 (return (insert v result binding)))
-
-                  ;variable result)))))
-  
-;  (if (null? actual-param-list)
-;      (display '())
-;      (display (list (eval-expression (car actual-param-list) env) (car formal-param-list))))
-;;  (display (list (eval-expression (car actual-param-list) env) (car formal-param-list)))
-;  (if (eq? (equal-length actual-param-list formal-param-list (lambda (v) v)) #t)
-;      (if (null? actual-param-list)
-;          (return '() '())
-;;          (return (eval-expression (car actual-param-list) env) (car formal-param-list))
-;          (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
-;                                     (lambda (v1 v2) (list (cons (eval-expression (car actual-param-list) env) v1) (cons (car formal-param-list) v2))))
-          
-;          (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list) (lambda (v1 v2) (list (cons (car actual-param-list) v1) (cons v2 (car formal-param-list)))))
-;          )
-;      (error "The formal and actual parameters must match")))
-
-; Checks if the lengths of 2 lists are equal
-(define (equal-length l1 l2 return)
-  (if (null? l1)
-      (if (null? l2)
-          (return #t)
-          (return #f))
-      (if (null? l2)
-          (return #f)
-          (return (equal-length (cdr l1) (cdr l2) (lambda (v) v))))))
-
+                                             (insert (car formal-param-list) (eval-expression (car actual-param-list) env) binding) return)))))
 
 ; creates a binding of the 2 lists
 (define (bind-parameters env actual formal return)
@@ -483,11 +440,8 @@
 (check-equal? (get-globals (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5))))
 (check-equal? (get-globals (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ())))))) '(((a) (#&10))))
 
-; 
+; Check binding variables to values
 (define global_var (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))))
-(display global_var)
-(display "\n")
 (define parameter_definitions '(x y z))
 (define parameter_bindings '(a 10 (+ a b)))
-(bind-actual-formal global_var parameter_bindings parameter_definitions)
-;(check-equal? (bind-actual-formal global_var '(a 10 (+ a b)) '(x y z))
+(check-equal? (bind-actual-formal global_var parameter_bindings parameter_definitions) '((z y x) (#&6 #&10 #&1)))
