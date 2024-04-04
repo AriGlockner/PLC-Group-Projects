@@ -250,6 +250,51 @@
     ((null? (cdr env)) (return env))
     (else (return (get-globals-cps (cdr env) (lambda (v) v))))))
 
+(define (bind-actual-formal env actual-param-list formal-param-list)
+  (bind-actual-formal-helper env actual-param-list formal-param-list (lambda (v1 v2) (list v1 v2))))
+
+; (define eval-expression
+;  (lambda (expr environment)
+(define (bind-actual-formal-helper env actual-param-list formal-param-list return)
+  (if (null? actual-param-list)
+      (display '())
+      (display (list (eval-expression (car actual-param-list) env) (car formal-param-list))))
+;  (display env)
+;  (display (list (eval-expression (car actual-param-list) env) (car formal-param-list)))
+  (if (eq? (equal-length actual-param-list formal-param-list (lambda (v) v)) #t)
+      (if (null? actual-param-list)
+          (return '() '())
+;          (return (eval-expression (car actual-param-list) env) (car formal-param-list))
+          (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
+                                     (lambda (v1 v2) (list (cons (eval-expression (car actual-param-list) env) v1) (cons (car formal-param-list) v2))))
+          
+;          (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list) (lambda (v1 v2) (list (cons (car actual-param-list) v1) (cons v2 (car formal-param-list)))))
+          )
+      (error "The formal and actual parameters must match")))
+
+; Checks if the lengths of 2 lists are equal
+(define (equal-length l1 l2 return)
+  (if (null? l1)
+      (if (null? l2)
+          (return #t)
+          (return #f))
+      (if (null? l2)
+          (return #f)
+          (return (equal-length (cdr l1) (cdr l2) (lambda (v) v))))))
+
+
+; creates a binding of the 2 lists
+(define (bind-parameters env actual formal return)
+  (cond
+    ; Either the actual or formal parameters is empty
+    ((null? actual)
+     (if (null? formal)
+         (return env)
+         (error "The formal and actual parameters must match")))
+    ((null? formal) (error "The formal and actual parameters must match"))
+    ; Otherwise
+    (else env)))
+
 ; add a frame onto the top of the environment
 (define push-frame
   (lambda (environment)
@@ -406,10 +451,18 @@
 (display "Start Debugging:\n")
 
 ; Test environments
-(define global_var '((() ())))
+;(define global_var '((() ())))
 (define params '((() ())))
-(check-equal? (newenvironment (insert 'a 10 global_var) (insert 'a 1 (insert 'b 5 params))) '(((a b) (#&1 #&5)) ((a) (#&10))))
+(check-equal? (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5)) ((a) (#&10))))
 ; Check getting the global variables
-(check-equal? (get-globals global_var) '((() ())))
-(check-equal? (get-globals (insert 'a 1 (insert 'b 5 params))) '(((a b) (#&1 #&5))))
-(check-equal? (get-globals (newenvironment (insert 'a 10 global_var) (insert 'a 1 (insert 'b 5 params)))) '(((a) (#&10))))
+(check-equal? (get-globals '((() ()))) '((() ())))
+(check-equal? (get-globals (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5))))
+(check-equal? (get-globals (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ())))))) '(((a) (#&10))))
+
+(define global_var (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))))
+(display global_var)
+(display "\n")
+(define parameter_definitions '(x y z))
+(define parameter_bindings '(a 10 (+ a b)))
+(bind-actual-formal global_var parameter_bindings parameter_definitions)
+;(check-equal? (bind-actual-formal global_var '(a 10 (+ a b)) '(x y z))
