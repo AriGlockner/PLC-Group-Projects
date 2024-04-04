@@ -251,26 +251,51 @@
     (else (return (get-globals-cps (cdr env) (lambda (v) v))))))
 
 (define (bind-actual-formal env actual-param-list formal-param-list)
-  (bind-actual-formal-helper env actual-param-list formal-param-list (lambda (v1 v2) (list v1 v2))))
+  (bind-actual-formal-helper env actual-param-list formal-param-list '((() ())) (lambda (v) v)))
+  ;(lambda (v1 v2) (list v1 v2))))
 
 ; (define eval-expression
 ;  (lambda (expr environment)
-(define (bind-actual-formal-helper env actual-param-list formal-param-list return)
+
+;(insert var val environment)
+(define (bind-actual-formal-helper env actual-param-list formal-param-list binding return)
   (if (null? actual-param-list)
-      (display '())
-      (display (list (eval-expression (car actual-param-list) env) (car formal-param-list))))
-;  (display env)
-;  (display (list (eval-expression (car actual-param-list) env) (car formal-param-list)))
-  (if (eq? (equal-length actual-param-list formal-param-list (lambda (v) v)) #t)
+      (if (null? formal-param-list)
+          (return binding)
+          (error "The formal and actual parameters must match"))
       (if (null? actual-param-list)
-          (return '() '())
-;          (return (eval-expression (car actual-param-list) env) (car formal-param-list))
-          (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
-                                     (lambda (v1 v2) (list (cons (eval-expression (car actual-param-list) env) v1) (cons (car formal-param-list) v2))))
+          (error "The formal and actual parameters must match")
+          (return (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
+                                             (insert (car formal-param-list) (eval-expression (car actual-param-list) env) binding)
+                                             return)
+                  ))))
+          
+
+          
+;          (let ((v (car formal-param-list))
+;                (result (eval-expression (car actual-param-list) env)))
+;           (display v)
+;            (display result)
+            
+;            (display (insert v result binding))
+;                 (return (insert v result binding)))
+
+                  ;variable result)))))
+  
+;  (if (null? actual-param-list)
+;      (display '())
+;      (display (list (eval-expression (car actual-param-list) env) (car formal-param-list))))
+;;  (display (list (eval-expression (car actual-param-list) env) (car formal-param-list)))
+;  (if (eq? (equal-length actual-param-list formal-param-list (lambda (v) v)) #t)
+;      (if (null? actual-param-list)
+;          (return '() '())
+;;          (return (eval-expression (car actual-param-list) env) (car formal-param-list))
+;          (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
+;                                     (lambda (v1 v2) (list (cons (eval-expression (car actual-param-list) env) v1) (cons (car formal-param-list) v2))))
           
 ;          (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list) (lambda (v1 v2) (list (cons (car actual-param-list) v1) (cons v2 (car formal-param-list)))))
-          )
-      (error "The formal and actual parameters must match")))
+;          )
+;      (error "The formal and actual parameters must match")))
 
 ; Checks if the lengths of 2 lists are equal
 (define (equal-length l1 l2 return)
@@ -451,14 +476,14 @@
 (display "Start Debugging:\n")
 
 ; Test environments
-;(define global_var '((() ())))
-(define params '((() ())))
 (check-equal? (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5)) ((a) (#&10))))
+
 ; Check getting the global variables
 (check-equal? (get-globals '((() ()))) '((() ())))
 (check-equal? (get-globals (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5))))
 (check-equal? (get-globals (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ())))))) '(((a) (#&10))))
 
+; 
 (define global_var (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))))
 (display global_var)
 (display "\n")
