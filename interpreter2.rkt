@@ -51,7 +51,6 @@
         ; TODO: Run main function
         (error "The main function is not yet implemented")
         ; Add function to the environment
-        ;(next (insert (car statement) (cdr statement) environment))
         (insert-function (car statement) (cdr statement) environment)
         )))
 
@@ -148,13 +147,23 @@
       ((not (eq? (statement-type finally-statement) 'finally)) (myerror "Incorrectly formatted finally block"))
       (else (cons 'begin (cadr finally-statement))))))
 
-; Evaluates all functions
+; Evaluates the function
+; 1) Lookup function name => check to ensure not null
+; 2) Creates new environment
+; 3) Calls eval-function-body
+; function-environment current-env actual-param-list formal-param-list
 (define eval-function
+  (lambda (name environment params)
+    (eval-function-body (function-environment environment (car (lookup name environment)) params) (cadr (lookup name environment)))
+    ))
+
+; Evaluates the body of the function
+(define eval-function-body
   (lambda (environment body)
     (cond
       ((null? body) null) ; No statements left => return null
-      ((eq? (caar body)) (eval-expression (cdar body) environment)) ; statement is a return => return the statement
-      (else (eval-function (eval-expression (car body) environment) (cdr body)))))) ; Otherwise => preform the expr and continue
+      ((eq? (car body) 'return) (eval-expression (cadr body) environment)) ; statement is a return => return the statement
+      (else (eval-function-body (eval-expression (car body) environment) (cdr body)))))) ; Otherwise => preform the expr and continue
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
 (define eval-expression
@@ -484,10 +493,14 @@
 ; (function-environment current-env defined-params passed-in-params)
 (check-equal? (function-environment global_var parameter_bindings parameter_definitions) '(((z y x) (#&6 #&10 #&1)) ((a) (#&10))))
 
-; (function a () (return 0))
-; (function swap (& x & y) ((var temp x) (= x y) (= y temp)))
-; (statement environment return break continue throw next)
+; Declaring functions
 (check-equal? (interpret-function '(f () (return 0)) global_var (lambda (v) v) null null null null) '(((f a b) (#&(() (return 0)) #&1 #&5)) ((a) (#&10))))
 (check-equal? (interpret-function '(swap (& x & y) ((var temp x) (= x y) (= y temp))) global_var (lambda (v) v) null null null null)
               '(((swap a b) (#&((& x & y) ((var temp x) (= x y) (= y temp))) #&1 #&5)) ((a) (#&10))))
-              
+
+; Testing functions
+(define no-param-func '(((f a b) (#&(() (return (+ 1 0))) #&1 #&5)) ((a) (#&10))))
+(check-equal? (eval-function 'f no-param-func '()) 1)
+;(check-equal? (eval-function
+(define swap-state '(((swap a b) (#&((& x & y) ((var temp x) (= x y) (= y temp))) #&1 #&5)) ((a) (#&10))))
+
