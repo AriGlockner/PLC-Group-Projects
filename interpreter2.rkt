@@ -38,7 +38,22 @@
       ((eq? 'begin (statement-type statement)) (interpret-block statement environment return break continue throw next))
       ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
       ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
+      ((eq? 'function (statement-type statement)) (interpret-function (cdr statement) environment return break continue throw next))
       (else (myerror "Unknown statement:" (statement-type statement))))))  
+
+; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
+; (function swap (& x & y) ((var temp x) (= x y) (= y temp)))
+; (a (x y) ((return (+ x y)))
+; (function main () ((var x 10) (var y 15) (return (funcall gcd x y))))
+(define interpret-function
+  (lambda (statement environment return break continue throw next)
+    (if (eq? 'main (car statement))
+        ; TODO: Run main function
+        (error "The main function is not yet implemented")
+        ; Add function to the environment
+        ;(next (insert (car statement) (cdr statement) environment))
+        (insert-function (car statement) (cdr statement) environment)
+        )))
 
 ; Calls the return continuation with the given expression value
 (define interpret-return
@@ -132,6 +147,14 @@
       ((null? finally-statement) '(begin))
       ((not (eq? (statement-type finally-statement) 'finally)) (myerror "Incorrectly formatted finally block"))
       (else (cons 'begin (cadr finally-statement))))))
+
+; Evaluates all functions
+(define eval-function
+  (lambda (environment body)
+    (cond
+      ((null? body) null) ; No statements left => return null
+      ((eq? (caar body)) (eval-expression (cdar body) environment)) ; statement is a return => return the statement
+      (else (eval-function (eval-expression (car body) environment) (cdr body)))))) ; Otherwise => preform the expr and continue
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
 (define eval-expression
@@ -356,12 +379,19 @@
       ((zero? n) (car l))
       (else (get-value (- n 1) (cdr l))))))
 
-; Adds a new variable/value binding pair into the environment.  Gives an error if the variable already exists in this frame.
+; Adds a new variable/value binding pair into the environment.  Gives an error if the variable (or a function) already exists in this frame.
 (define insert
   (lambda (var val environment)
     (if (exists-in-list? var (variables (car environment)))
         (myerror "error: variable is being re-declared:" var)
         (cons (add-to-frame var val (car environment)) (cdr environment)))))
+
+; Adds a new function/(params) (body) pair into the environment. Gives an error if the function (or a variable) already exists in this frame.
+(define insert-function
+  (lambda (name func environment)
+    (if (exists-in-list? name (variables (car environment)))
+        (myerror "error: variable is being re-declared:" name)
+        (cons (add-to-frame name func (car environment)) (cdr environment)))))
 
 ; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
 (define update
@@ -453,3 +483,11 @@
 
 ; (function-environment current-env defined-params passed-in-params)
 (check-equal? (function-environment global_var parameter_bindings parameter_definitions) '(((z y x) (#&6 #&10 #&1)) ((a) (#&10))))
+
+; (function a () (return 0))
+; (function swap (& x & y) ((var temp x) (= x y) (= y temp)))
+; (statement environment return break continue throw next)
+(check-equal? (interpret-function '(f () (return 0)) global_var (lambda (v) v) null null null null) '(((f a b) (#&(() (return 0)) #&1 #&5)) ((a) (#&10))))
+(check-equal? (interpret-function '(swap (& x & y) ((var temp x) (= x y) (= y temp))) global_var (lambda (v) v) null null null null)
+              '(((swap a b) (#&((& x & y) ((var temp x) (= x y) (= y temp))) #&1 #&5)) ((a) (#&10))))
+              
