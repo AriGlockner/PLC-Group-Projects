@@ -23,19 +23,19 @@ jobs:
           distribution: 'full'
           version: '8.11'
 
-      # - name: Run part 1 unit tests
-      #   run: raco test tests-p1.rkt
+      - name: Run part 1 unit tests
+        run: raco test tests-p1.rkt
 
-      # - name: Check part 1 test results and prevent push on failure
-      #   if: ${{ failure() }}
-      #   run: echo "Part 1 tests failed. Changes cannot be pushed to main." && exit 1
+      - name: Check part 1 test results and prevent push on failure
+        if: ${{ failure() }}
+        run: echo "Part 1 tests failed. Changes cannot be pushed to main." && exit 1
 
-      # - name: Run part 2unit tests
-      #   run: raco test tests-p2.rkt
+      - name: Run part 2unit tests
+        run: raco test tests-p2.rkt
 
-      # - name: Check part 2 test results and prevent push on failure
-      #   if: ${{ failure() }}
-      #   run: echo "Part 2 tests failed. Changes cannot be pushed to main." && exit 1
+      - name: Check part 2 test results and prevent push on failure
+        if: ${{ failure() }}
+        run: echo "Part 2 tests failed. Changes cannot be pushed to main." && exit 1
 
       - name: Run part 3 unit tests
         run: raco test tests-p3.rkt
