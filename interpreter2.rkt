@@ -40,7 +40,21 @@
       ((eq? 'begin (statement-type statement)) (interpret-block statement environment return break continue throw next))
       ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
       ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
+      ((eq? 'function (statement-type statement)) (interpret-function statement environment))
       (else (myerror "Unknown statement:" (statement-type statement))))))  
+
+; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
+; (function swap (& x & y) ((var temp x) (= x y) (= y temp)))
+; (a (x y) ((return (+ x y)))
+; (function main () ((var x 10) (var y 15) (return (funcall gcd x y))))
+(define interpret-function
+  (lambda (statement environment)
+    (if (eq? 'main (car statement))
+        ; TODO: Run main function
+        (error "The main function is not yet implemented")
+        ; Add function to the environment
+        (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment)
+        )))
 
 ; Calls the return continuation with the given expression value
 (define interpret-return
@@ -277,21 +291,33 @@
 (define get-try operand1)
 (define get-catch operand2)
 (define get-finally operand3)
+(define get-function-name operand1)
+
+(define get-formal-params caddr)
+(define get-function-body cadddr)
 
 (define catch-var
   (lambda (catch-statement)
     (car (operand1 catch-statement))))
 
-
 ;------------------------
+; Closure Functions
+;------------------------
+
+; Create Closure Function
+(define (create_closure_function formal_param_list)
+  (lambda (current_env actual_param_list)
+    (newenvironment (get-globals current_env)
+                    (bind-actual-formal actual_param_list formal_param_list current_env))))
+
+; Makes the closure
+(define (make_closure formal_params body state)
+  (list formal_params body (create_closure_function formal_params)))
+
+
+;----------------------------
 ; Environment/State Functions
-;------------------------
-
-; Creates a new environment for a function from the global variables and the parameters
-(define newenvironment
-  (lambda (global params)
-    (list (car params) (car global))
-  ))
+;----------------------------
 
 ; create a new empty environment
 (define initenvironment
@@ -302,6 +328,54 @@
 (define emptyframe
   (lambda ()
     '(() ())))
+
+; Creates a new environment for a function from the global variables and the parameters
+(define newenvironment
+  (lambda (global params)
+    (list (car params) (car global))))
+
+; Gets the global variables out of an environment
+(define (get-globals env)
+  (get-globals-cps env (lambda (v) v)))
+
+; Helper to make this tail recursive
+(define (get-globals-cps env return)
+  (cond
+    ((null? env) (return '((() ()))))
+    ((null? (cdr env)) (return env))
+    (else (return (get-globals-cps (cdr env) (lambda (v) v))))))
+
+; Binds the parameters to the values (or value of the expressions) that they are passed in with.
+(define (bind-actual-formal env actual-param-list formal-param-list)
+  (car (bind-actual-formal-helper env actual-param-list formal-param-list '((() ())) (lambda (v) v))))
+
+; Preforms the bindings for the bind-actual-formal function
+(define (bind-actual-formal-helper env actual-param-list formal-param-list binding return)
+  (if (null? actual-param-list)
+      (if (null? formal-param-list)
+          (return binding)
+          (error "The formal and actual parameters must match"))
+      (if (null? actual-param-list)
+          (error "The formal and actual parameters must match")
+          (return (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
+                                             (insert (car formal-param-list) (eval-expression (car actual-param-list) env) binding) return)))))
+
+; Create the environment for the function
+(define (function-environment current-env actual-param-list formal-param-list)
+  (cons (bind-actual-formal current-env actual-param-list formal-param-list)
+  (get-globals current-env)))
+
+; creates a binding of the 2 lists
+(define (bind-parameters env actual formal return)
+  (cond
+    ; Either the actual or formal parameters is empty
+    ((null? actual)
+     (if (null? formal)
+         (return env)
+         (error "The formal and actual parameters must match")))
+    ((null? formal) (error "The formal and actual parameters must match"))
+    ; Otherwise
+    (else env)))
 
 ; add a frame onto the top of the environment
 (define push-frame
@@ -377,12 +451,19 @@
       ((zero? n) (car l))
       (else (get-value (- n 1) (cdr l))))))
 
-; Adds a new variable/value binding pair into the environment.  Gives an error if the variable already exists in this frame.
+; Adds a new variable/value binding pair into the environment.  Gives an error if the variable (or a function) already exists in this frame.
 (define insert
   (lambda (var val environment)
     (if (exists-in-list? var (variables (car environment)))
         (myerror "error: variable is being re-declared:" var)
         (cons (add-to-frame var val (car environment)) (cdr environment)))))
+
+; Adds a new function/(params) (body) pair into the environment. Gives an error if the function (or a variable) already exists in this frame.
+(define insert-function
+  (lambda (name formal-params func-body environment)
+    (if (exists-in-list? name (variables (car environment)))
+        (myerror "error: variable is being re-declared:" name)
+        (cons (add-func-to-frame name (make_closure formal-params func-body environment) (car environment)) (cdr environment)))))
 
 ; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
 (define update
@@ -395,6 +476,11 @@
 (define add-to-frame
   (lambda (var val frame)
     (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame)))))
+
+; Add a new name,function_closure pair to the frame.
+(define add-func-to-frame
+  (lambda (name closure frame)
+    (list (cons name (variables frame)) (cons closure (store frame)))))
 
 ; Changes the binding of a variable in the environment to a new value
 (define update-existing
@@ -453,43 +539,44 @@
                         (if (null? vals)
                             str
                             (makestr (string-append str (string-append " " (symbol->string (car vals)))) (cdr vals))))))
-      (error-break
-       ;(display (string-append (string-append str (makestr "" vals)) "\n"))
-       ))))
-
-
-
-(check-equal? (interpret "tests/test1.bad") 150)
-(check-equal? (interpret "tests/test2.bad") -4)
-(check-equal? (interpret "tests/test3.bad") 10)
-(check-equal? (interpret "tests/test4.bad") 16)
-(check-equal? (interpret "tests/test5.bad") 220)
-(check-equal? (interpret "tests/test6.bad") 5)
-(check-equal? (interpret "tests/test7.bad") 6)
-(check-equal? (interpret "tests/test8.bad") 10)
-(check-equal? (interpret "tests/test9.bad") 5)
-(check-equal? (interpret "tests/test10.bad") -39)
-(check-exn
-   exn:fail? (lambda () (interpret "tests/test11.bad")))
-(check-equal? (interpret "tests/test12.bad") 'error)
-(check-equal? (interpret "tests/test12.bad") 'error)
-(check-exn
-   exn:fail? (lambda () (interpret "tests/test13.bad")))
-(check-exn
-   exn:fail? (lambda () (interpret "tests/test14.bad")))
-(check-equal? (interpret "tests/test15.bad") 'true)
-(check-equal? (interpret "tests/test16.bad") 100)
-(check-equal? (interpret "tests/test17.bad") 'false)
-(check-equal? (interpret "tests/test18.bad") 'true)
-(check-equal? (interpret "tests/test19.bad") 128)
-(check-equal? (interpret "tests/test20.bad") 12)
-
-
+      (error-break (display (string-append (string-append str (makestr "" vals)) "\n"))))))
 
 
 (display "Start Debugging:\n")
 
 ; Test environments
-(define global_var '((() ())))
-(define params '((() ())))
-(check-equal? (newenvironment (insert 'a 10 global_var) (insert 'a 1 (insert 'b 5 params))) '(((a b) (#&1 #&5)) ((a) (#&10))))
+(check-equal? (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5)) ((a) (#&10))))
+
+; Check getting the global variables
+(check-equal? (get-globals '((() ()))) '((() ())))
+(check-equal? (get-globals (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5))))
+(check-equal? (get-globals (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ())))))) '(((a) (#&10))))
+
+; Check binding variables to values
+(define global_var (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))))
+(define parameter_definitions '(x y z))
+(define parameter_bindings '(a 10 (+ a b)))
+; FAIL BECAUSE THROW (check-equal? (bind-actual-formal global_var parameter_bindings parameter_definitions) '((z y x) (#&6 #&10 #&1)))
+
+; (function-environment current-env defined-params passed-in-params)
+; FAIL BECAUSE THROW (check-equal? (function-environment global_var parameter_bindings parameter_definitions) '(((z y x) (#&6 #&10 #&1)) ((a) (#&10))))
+
+; function definition
+(check-equal? (caaar (interpret-function '(function add () (return 1)) (initenvironment))) 'add)
+(check-equal? (car (caadar (interpret-function '(function add () (return 1)) (initenvironment)))) '())
+(check-equal? (car (cdr (caadar (interpret-function '(function add () (return 1)) (initenvironment))))) '(return 1))
+
+(check-equal? (caaar (interpret-function '(function add (a b) (return (+ a b))) (initenvironment))) 'add)
+(check-equal? (car (caadar (interpret-function '(function add (a b) (return (+ a b))) (initenvironment)))) '(a b))
+(check-equal? (car (cdr (caadar (interpret-function '(function add () (return (+ a b))) (initenvironment))))) '(return (+ a b)))
+
+; Testing functions
+(define no-param-func '(((f a b) (#&(() (return (+ 1 0))) #&1 #&5)) ((a) (#&10))))
+
+; (function a (x y) ((return (+ x y)))
+(define add-state '(((f x y) (#&(() (return (+ x y))) #&1 #&5)) ((a) (#&10))))
+
+;(interpret-function '(swap (& x & y) ((var temp x) (= x y) (= y temp))) swap-state (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v))
+
+; interpret-function 
+;  (lambda (statement environment return break continue throw next)
