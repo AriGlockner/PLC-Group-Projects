@@ -1,0 +1,7 @@
+function isGreater(x, y) {
+  return x > y;
+}
+
+function main() {
+  return isGreater(2, 1);
+}
