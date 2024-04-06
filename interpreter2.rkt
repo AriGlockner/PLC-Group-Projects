@@ -38,6 +38,7 @@
       ((eq? 'begin (statement-type statement)) (interpret-block statement environment return break continue throw next))
       ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
       ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
+      ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment next throw))
       (else (myerror "Unknown statement:" (statement-type statement))))))  
 
 ; Calls the return continuation with the given expression value
@@ -133,6 +134,18 @@
       ((not (eq? (statement-type finally-statement) 'finally)) (myerror "Incorrectly formatted finally block"))
       (else (cons 'begin (cadr finally-statement))))))
 
+; Interprets a funcall in value [TO BE CREATED]
+(define interpret-funcall-value
+  (lambda (funcall enviroment throw)
+    (display "calling a function in a value")
+    ))
+
+; Interprets a funcall in state [TO BE CREATED]
+(define interpret-funcall-state
+  (lambda (funcall enviroment next throw)
+    (display "calling a function in a state")
+    ))
+
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
 (define eval-expression
   (lambda (expr enviroment throw)
@@ -145,6 +158,8 @@
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
       ((not (list? expr)) (return (lookup expr environment)))
+      ((eq? expr 'funcall)
+       (return interpret-funcall-value expr environment throw))
       (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
@@ -490,3 +505,4 @@
 (define global_var '((() ())))
 (define params '((() ())))
 (check-equal? (newenvironment (insert 'a 10 global_var) (insert 'a 1 (insert 'b 5 params))) '(((a b) (#&1 #&5)) ((a) (#&10))))
+

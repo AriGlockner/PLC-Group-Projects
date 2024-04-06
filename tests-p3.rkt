@@ -9,7 +9,7 @@
 (define state '(((x y a) (5 12 true))))
 
 ; part 3 canvas integration tests
-;(check-equal? (interpret "tests/p3_t1.bad") 10) ; Fail
+(check-equal? (interpret "tests/p3_t1.bad") 10) ; Fail
 ;(check-equal? (interpret "tests/p3_t2.bad") 14) ; Fail
 ;(check-equal? (interpret "tests/p3_t3.bad") 45) ; Fail
 ;(check-equal? (interpret "tests/p3_t4.bad") 55) ; Fail
