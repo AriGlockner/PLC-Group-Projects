@@ -287,6 +287,10 @@
 (define (make_closure formal_params body state)
   (list formal_params body (create_closure_function formal_params)))
 
+; Add a new variable/value pair to the frame.
+(define add-func-to-frame
+  (lambda (name closure frame)
+    (list (cons name (variables frame)) (cons closure (store frame)))))
 
 ;------------------------
 ; Environment/State Functions
