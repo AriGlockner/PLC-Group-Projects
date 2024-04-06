@@ -1,0 +1,9 @@
+function test() {
+  return 5;
+}
+
+// display state to see if we have a closure here
+
+function main() {
+  return 1;
+}

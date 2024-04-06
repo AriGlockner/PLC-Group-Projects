@@ -25,3 +25,4 @@
 (check-equal? (interpret "tests/p3_t19.bad") 100) ; Fail
 (check-equal? (interpret "tests/p3_t20.bad") 2000400) ; Fail
 
+(check-equal? (interpret "tests/p3_t_func_def.bad") 1)
