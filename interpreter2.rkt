@@ -564,16 +564,14 @@
 
 
 ; function definition
-; Test without parameters
+; Without parameters
 (define add-function (interpret-function '(function add () (return 1)) (initenvironment) (lambda (v) v)))
 (check-equal? (caaar add-function) 'add)
 (check-equal? (car (caadar add-function)) '())
 (check-equal? (car (cdr (caadar add-function))) '(return 1))
 
-; Test with parameters
+; With parameters
 (define add-function2 (interpret-function '(function add (a b) (return (+ a b))) (initenvironment) (lambda (v) v)))
 (check-equal? (caaar add-function2) 'add)
 (check-equal? (car (caadar add-function2)) '(a b))
-
-; Test from global variables
-(check-equal? (car (cdr (caadar (interpret-function '(function add () (return (+ a b))) (initenvironment) (lambda (v) v))))) '(return (+ a b)))
+(check-equal? (car (cdr (caadar add-function2))) '(return (+ a b)))
