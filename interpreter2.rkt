@@ -147,11 +147,24 @@
       ((not (eq? (statement-type finally-statement) 'finally)) (myerror "Incorrectly formatted finally block"))
       (else (cons 'begin (cadr finally-statement))))))
 
+; get function closure
+(define get-function-closure
+  (lambda (function enviroment)
+    (cond
+      ((equal? enviroment '((()()))) (error "function not found"))
+      ((atom? (car enviroment)) (get-function-closure function (cdr enviroment)))
+      ((null? (car enviroment)) (get-function-closure function (pop-frame enviroment)))
+      ((and (eq? function (caar enviroment)) (list? (cadar enviroment)) (cadar enviroment)))
+      (else (get-function-closure function (cons (cdar enviroment) (cons (cdadr enviroment)) (cddr enviroment))))
+      )))
 
 ; Interprets a funcall in value [TO BE CREATED]
 (define interpret-funcall-value
   (lambda (funcall enviroment throw)
     (display "calling a function in a value")
+    (let ((closure (get-function-closure (cadr funcall) enviroment)))
+      (M_stateme
+      
     
     ))
 
