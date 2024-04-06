@@ -154,8 +154,34 @@
 ; function-environment current-env actual-param-list formal-param-list
 (define eval-function
   (lambda (name environment params)
-    (eval-function-body (function-environment environment (car (lookup name environment)) params) (cadr (lookup name environment)))
+    ; TODO: Delete displays => useful for debugging
+    (display environment) ; Make sure that it gets added to the correct layer
+    (display "\n")
+    (display params) ; Passed in correctly
+    (display " => ")
+    (display (convert-params-to-values params environment))
+    (display "\n")
+    (display (car (lookup name environment)))
+    (display "\n")
+    (display (eq? params (car (lookup name environment))))
+
+    ; Create the environment for the method call
+    ; bind-actual-formal env actual-param-list formal-param-list
+    (display (bind-actual-formal environment (lookup name environment) params))
+    (display "\n")
+    
+    ; Evaluate the function body
+    ; bind-actual-formal
+    (eval-function-body (function-environment environment (lookup name environment) params) (cadr (lookup name environment)))
     ))
+
+; Generate the environment
+(define convert-params-to-values
+  (lambda (p env)
+    (if (null? p)
+        '()
+        (cons (eval-expression (car p) env) (convert-params-to-values (cdr p) env)))))
+        ;(cons (lookup (car p) env) (foo (cdr p) env)))))
 
 ; Evaluates the body of the function
 (define eval-function-body
@@ -500,7 +526,15 @@
 
 ; Testing functions
 (define no-param-func '(((f a b) (#&(() (return (+ 1 0))) #&1 #&5)) ((a) (#&10))))
-(check-equal? (eval-function 'f no-param-func '()) 1)
-;(check-equal? (eval-function
-(define swap-state '(((swap a b) (#&((& x & y) ((var temp x) (= x y) (= y temp))) #&1 #&5)) ((a) (#&10))))
 
+; (function a (x y) ((return (+ x y)))
+(define add-state '(((f x y) (#&(() (return (+ x y))) #&1 #&5)) ((a) (#&10))))
+
+;(interpret-function '(swap (& x & y) ((var temp x) (= x y) (= y temp))) swap-state (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v))
+
+; interpret-function 
+;  (lambda (statement environment return break continue throw next)
+
+(check-equal? (eval-function 'f no-param-func '()) 1)
+(display "\n")
+(eval-function 'f add-state '(a a))
