@@ -1,6 +1,6 @@
 #lang racket
 
-(require "interpreter.rkt")
+(require "interpreter2.rkt")
 (require "utils.rkt")
 (require "stateFunctions.rkt")
 (require "valueFunctions.rkt")
