@@ -26,6 +26,7 @@
         (next environment)
         (interpret-statement (car statement-list) environment return break continue throw (lambda (env) (interpret-statement-list (cdr statement-list) env return break continue throw next))))))
 
+
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
 (define interpret-statement
   (lambda (statement environment return break continue throw next)
@@ -40,7 +41,6 @@
       ((eq? 'begin (statement-type statement)) (interpret-block statement environment return break continue throw next))
       ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
       ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
-      ((eq? 'function (statement-type statement)) (interpret-function statement environment))
       (else (myerror "Unknown statement:" (statement-type statement))))))  
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
@@ -347,10 +347,10 @@
 
 ; Binds the parameters to the values (or value of the expressions) that they are passed in with.
 (define (bind-actual-formal env actual-param-list formal-param-list)
-  (car (bind-actual-formal-helper env actual-param-list formal-param-list '((() ())) (lambda (v) v))))
+  (car (bind-actual-formal-helper env actual-param-list formal-param-list '((() ())) (lambda (v) v) (lambda (v) v))))
 
 ; Preforms the bindings for the bind-actual-formal function
-(define (bind-actual-formal-helper env actual-param-list formal-param-list binding return)
+(define (bind-actual-formal-helper env actual-param-list formal-param-list binding return throw)
   (if (null? actual-param-list)
       (if (null? formal-param-list)
           (return binding)
@@ -358,7 +358,7 @@
       (if (null? actual-param-list)
           (error "The formal and actual parameters must match")
           (return (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
-                                             (insert (car formal-param-list) (eval-expression (car actual-param-list) env) binding) return)))))
+                                             (insert (car formal-param-list) (eval-expression (car actual-param-list) env throw) binding) return throw)))))
 
 ; Create the environment for the function
 (define (function-environment current-env actual-param-list formal-param-list)
@@ -556,10 +556,11 @@
 (define global_var (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))))
 (define parameter_definitions '(x y z))
 (define parameter_bindings '(a 10 (+ a b)))
-; FAIL BECAUSE THROW (check-equal? (bind-actual-formal global_var parameter_bindings parameter_definitions) '((z y x) (#&6 #&10 #&1)))
+(check-equal? (bind-actual-formal global_var parameter_bindings parameter_definitions) '((z y x) (#&6 #&10 #&1)))
 
 ; (function-environment current-env defined-params passed-in-params)
-; FAIL BECAUSE THROW (check-equal? (function-environment global_var parameter_bindings parameter_definitions) '(((z y x) (#&6 #&10 #&1)) ((a) (#&10))))
+(check-equal? (function-environment global_var parameter_bindings parameter_definitions) '(((z y x) (#&6 #&10 #&1)) ((a) (#&10))))
+
 
 ; function definition
 (check-equal? (caaar (interpret-function '(function add () (return 1)) (initenvironment))) 'add)
