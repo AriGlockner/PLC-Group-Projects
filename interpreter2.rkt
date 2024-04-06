@@ -41,6 +41,7 @@
       ((eq? 'begin (statement-type statement)) (interpret-block statement environment return break continue throw next))
       ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
       ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
+      ((eq? 'function (statement-type statement)) (interpret-function statement environment next))
       (else (myerror "Unknown statement:" (statement-type statement))))))  
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
@@ -48,12 +49,12 @@
 ; (a (x y) ((return (+ x y)))
 ; (function main () ((var x 10) (var y 15) (return (funcall gcd x y))))
 (define interpret-function
-  (lambda (statement environment)
+  (lambda (statement environment next)
     (if (eq? 'main (car statement))
         ; TODO: Run main function
         (error "The main function is not yet implemented")
         ; Add function to the environment
-        (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment)
+        (next (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment))
         )))
 
 ; Calls the return continuation with the given expression value
@@ -563,13 +564,13 @@
 
 
 ; function definition
-(check-equal? (caaar (interpret-function '(function add () (return 1)) (initenvironment))) 'add)
-(check-equal? (car (caadar (interpret-function '(function add () (return 1)) (initenvironment)))) '())
-(check-equal? (car (cdr (caadar (interpret-function '(function add () (return 1)) (initenvironment))))) '(return 1))
+(check-equal? (caaar (interpret-function '(function add () (return 1)) (initenvironment) (lambda (v) v))) 'add)
+(check-equal? (car (caadar (interpret-function '(function add () (return 1)) (initenvironment) (lambda (v) v)))) '())
+(check-equal? (car (cdr (caadar (interpret-function '(function add () (return 1)) (initenvironment) (lambda (v) v))))) '(return 1))
 
-(check-equal? (caaar (interpret-function '(function add (a b) (return (+ a b))) (initenvironment))) 'add)
-(check-equal? (car (caadar (interpret-function '(function add (a b) (return (+ a b))) (initenvironment)))) '(a b))
-(check-equal? (car (cdr (caadar (interpret-function '(function add () (return (+ a b))) (initenvironment))))) '(return (+ a b)))
+(check-equal? (caaar (interpret-function '(function add (a b) (return (+ a b))) (initenvironment) (lambda (v) v))) 'add)
+(check-equal? (car (caadar (interpret-function '(function add (a b) (return (+ a b))) (initenvironment) (lambda (v) v)))) '(a b))
+(check-equal? (car (cdr (caadar (interpret-function '(function add () (return (+ a b))) (initenvironment) (lambda (v) v))))) '(return (+ a b)))
 
 ; Testing functions
 (define no-param-func '(((f a b) (#&(() (return (+ 1 0))) #&1 #&5)) ((a) (#&10))))
