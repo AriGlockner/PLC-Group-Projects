@@ -148,10 +148,6 @@
       (else (cons 'begin (cadr finally-statement))))))
 
 ; Evaluates the function
-; 1) Lookup function name => check to ensure not null
-; 2) Creates new environment
-; 3) Calls eval-function-body
-; function-environment current-env actual-param-list formal-param-list
 (define eval-function
   (lambda (name environment params)
     ; TODO: Delete displays => useful for debugging
@@ -281,13 +277,15 @@
 ; Closure Functions
 ;------------------------
 
-; Create Closure
+; Create Closure Function
 (define (create_closure_function formal_param_list)
   (lambda (current_env actual_param_list)
     (newenvironment (get-globals current_env)
                     (bind-actual-formal actual_param_list formal_param_list current_env))))
 
-; 
+; Makes the closure
+(define (make_closure formal_params body state)
+  (list formal_params body (create_closure_function formal_params)))
 
 
 ;------------------------
