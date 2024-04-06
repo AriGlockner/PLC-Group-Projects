@@ -564,21 +564,16 @@
 
 
 ; function definition
-(check-equal? (caaar (interpret-function '(function add () (return 1)) (initenvironment) (lambda (v) v))) 'add)
-(check-equal? (car (caadar (interpret-function '(function add () (return 1)) (initenvironment) (lambda (v) v)))) '())
-(check-equal? (car (cdr (caadar (interpret-function '(function add () (return 1)) (initenvironment) (lambda (v) v))))) '(return 1))
+; Test without parameters
+(define add-function (interpret-function '(function add () (return 1)) (initenvironment) (lambda (v) v)))
+(check-equal? (caaar add-function) 'add)
+(check-equal? (car (caadar add-function)) '())
+(check-equal? (car (cdr (caadar add-function))) '(return 1))
 
-(check-equal? (caaar (interpret-function '(function add (a b) (return (+ a b))) (initenvironment) (lambda (v) v))) 'add)
-(check-equal? (car (caadar (interpret-function '(function add (a b) (return (+ a b))) (initenvironment) (lambda (v) v)))) '(a b))
+; Test with parameters
+(define add-function2 (interpret-function '(function add (a b) (return (+ a b))) (initenvironment) (lambda (v) v)))
+(check-equal? (caaar add-function2) 'add)
+(check-equal? (car (caadar add-function2)) '(a b))
+
+; Test from global variables
 (check-equal? (car (cdr (caadar (interpret-function '(function add () (return (+ a b))) (initenvironment) (lambda (v) v))))) '(return (+ a b)))
-
-; Testing functions
-(define no-param-func '(((f a b) (#&(() (return (+ 1 0))) #&1 #&5)) ((a) (#&10))))
-
-; (function a (x y) ((return (+ x y)))
-(define add-state '(((f x y) (#&(() (return (+ x y))) #&1 #&5)) ((a) (#&10))))
-
-;(interpret-function '(swap (& x & y) ((var temp x) (= x y) (= y temp))) swap-state (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v) (lambda (v) v))
-
-; interpret-function 
-;  (lambda (statement environment return break continue throw next)
