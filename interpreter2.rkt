@@ -165,18 +165,15 @@
     (let ((closure (get-function-closure (cadr funcall) enviroment)))
       (interpret-statement-list
        (closure_body (cadr closure))
-       (bind-actual-formal enviroment (cddr funcall) (car closure) 
-
-
-       statement-list environment return break continue throw next
+       (bind-actual-formal enviroment (cddr funcall) (car closure))
+       return break continue throw next)
     
-    ))
+    )))
 
 ; Interprets a funcall in state [TO BE CREATED]
 (define interpret-funcall-state
   (lambda (funcall enviroment next throw)
-    (display "calling a function in a state")
-    ))
+    (display "calling a function in a state")))
 
 ; Evaluates the function
 (define eval-function
@@ -385,6 +382,8 @@
 ;------------------------
 ; Environment/State Functions
 ;------------------------
+
+(define (atom? x) (not (pair? x)))
 
 ; create a new empty environment
 (define initenvironment
