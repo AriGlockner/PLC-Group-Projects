@@ -277,6 +277,18 @@
   (lambda (catch-statement)
     (car (operand1 catch-statement))))
 
+;------------------------
+; Closure Functions
+;------------------------
+
+; Create Closure
+(define (create_closure_function formal_param_list)
+  (lambda (current_env actual_param_list)
+    (newenvironment (get-globals current_env)
+                    (bind-actual-formal actual_param_list formal_param_list current_env))))
+
+; 
+
 
 ;------------------------
 ; Environment/State Functions
