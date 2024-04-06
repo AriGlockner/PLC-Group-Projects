@@ -1,6 +1,6 @@
 ; If you are using scheme instead of racket, comment these two lines, uncomment the (load "simpleParser.scm") and comment the (require "simpleParser.rkt")
 #lang racket
-(require "simpleParser.rkt")
+(require "functionParser.rkt")
 (require rackunit)
 ; (load "simpleParser.scm")
 
@@ -8,6 +8,8 @@
 
 ; The functions that start interpret-...  all return the current environment.  These are the M_state functions.
 ; The functions that start eval-...  all return a value.  These are the M_value and M_boolean functions.
+
+(provide (all-defined-out))
 
 ; The main function.  Calls parser to get the parse tree and interprets it with a new environment.  Sets default continuations for return, break, continue, throw, and "next statement"
 (define interpret
@@ -496,6 +498,7 @@
 (check-equal? (interpret "tests/test18.bad") 'true)
 (check-equal? (interpret "tests/test19.bad") 128)
 (check-equal? (interpret "tests/test20.bad") 12)
+
 
 
 
