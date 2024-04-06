@@ -163,8 +163,12 @@
   (lambda (funcall enviroment throw)
     (display "calling a function in a value")
     (let ((closure (get-function-closure (cadr funcall) enviroment)))
-      (M_stateme
-      
+      (interpret-statement-list
+       (closure_body (cadr closure))
+       (bind-actual-formal enviroment (cddr funcall) (car closure) 
+
+
+       statement-list environment return break continue throw next
     
     ))
 
