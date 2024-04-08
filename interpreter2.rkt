@@ -489,19 +489,17 @@
           value))))
 
 ; Return the value bound to a variable in the environment
-(define lookup-in-env
-  (lambda (var environment)
-    (cond
-      ((null? environment) (myerror "error: undefined variable" var))
-      ((exists-in-list? var (variables (topframe environment))) (lookup-in-frame var (topframe environment)))
-      (else (lookup-in-env var (cdr environment))))))
+(define (lookup-in-env var environment)
+  (cond
+    ((null? environment) (myerror "error: undefined variable" var))
+    ((exists-in-list? var (variables (topframe environment))) (lookup-in-frame var (topframe environment)))
+    (else (lookup-in-env var (cdr environment)))))
 
 ; Return the value bound to a variable in the frame
-(define lookup-in-frame
-  (lambda (var frame)
-    (cond
-      ((not (exists-in-list? var (variables frame))) (myerror "error: undefined variable" var))
-      (else (language->scheme (unbox (get-value (indexof var (variables frame)) (store frame))))))))
+(define (lookup-in-frame var frame)
+  (if (exists-in-list? var (variables frame))
+      (language->scheme (unbox (get-value (indexof var (variables frame)) (store frame))))
+      (myerror "error: undefined variable" var)))
 
 ; Get the location of a name in a list of names
 (define (indexof var l)
