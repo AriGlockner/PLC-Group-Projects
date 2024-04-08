@@ -42,7 +42,7 @@
       ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
       ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
       ((eq? 'function (statement-type statement)) (interpret-function statement environment next))
-      ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment next throw))
+      ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment return break continue throw next))
       (else (myerror "Unknown statement:" (statement-type statement))))))  
 
 ; Calls a function in a value
@@ -56,10 +56,10 @@
          (env-creator (get-env-creator-from-closure)))
     
     ; Interpret the function
-    (eval-expression fn_body (env-creator actual_params environment))))
+    (eval-expression fn_body (env-creator actual_params environment) throw)))
 
 ; Calls a function in a state
-(define (interpret-funcall-state funcall environment next throw)
+(define (interpret-funcall-state funcall environment return break continue throw next)
   ; Get the function parameters
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
