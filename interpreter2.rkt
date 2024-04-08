@@ -564,8 +564,8 @@
 ; Changes a variable binding by placing the new value in the appropriate place in the store
 (define (update-in-frame-store var val varlist vallist)
   (if (eq? var (car varlist))
-      (begin (set-box! (car vallist) (scheme->language val)) vallist))
-      (cons (car vallist) (update-in-frame-store var val (cdr varlist) (cdr vallist))))
+      (begin (set-box! (car vallist) (scheme->language val)) vallist)
+      (cons (car vallist) (update-in-frame-store var val (cdr varlist) (cdr vallist)))))
 
 ; Returns the list of variables from a frame
 (define (variables frame) (car frame))
