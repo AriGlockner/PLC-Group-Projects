@@ -629,8 +629,8 @@
  ;   ((a b) ((= x (+ a b))) procedure)
  ;   #&10))))
 
-(lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
-   ((() ((funcall myfunc 6 x)) procedure)
-    ((a b) ((= x (+ a b))) procedure)
-    #&10)) ((q l) (3 4))
-       ))
+;(lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
+;   ((() ((funcall myfunc 6 x)) procedure)
+;    ((a b) ((= x (+ a b))) procedure)
+;    #&10)) ((q l) (3 4))
+;       ))
