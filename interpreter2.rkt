@@ -50,7 +50,6 @@
   ; Get the function parameters
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
-         (display actual_params)
          (closure (lookup-function-closure func_name environment))
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
