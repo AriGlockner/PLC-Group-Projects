@@ -546,9 +546,8 @@
     (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame)))))
 
 ; Add a new name,function_closure pair to the frame.
-(define add-func-to-frame
-  (lambda (name closure frame)
-    (list (cons name (variables frame)) (cons closure (store frame)))))
+(define (add-func-to-frame name closure frame)
+  (list (cons name (variables frame)) (cons closure (store frame))))
 
 ; Changes the binding of a variable in the environment to a new value
 (define update-existing
@@ -559,38 +558,28 @@
         (cons (topframe environment) (update-existing var val (remainingframes environment))))))
 
 ; Changes the binding of a variable in the frame to a new value.
-(define update-in-frame
-  (lambda (var val frame)
-    (list (variables frame) (update-in-frame-store var val (variables frame) (store frame)))))
+(define (update-in-frame var val frame)
+    (list (variables frame) (update-in-frame-store var val (variables frame) (store frame))))
 
 ; Changes a variable binding by placing the new value in the appropriate place in the store
-(define update-in-frame-store
-  (lambda (var val varlist vallist)
-    (cond
-      ((eq? var (car varlist)) (begin (set-box! (car vallist) (scheme->language val)) vallist))
-      (else (cons (car vallist) (update-in-frame-store var val (cdr varlist) (cdr vallist)))))))
+(define (update-in-frame-store var val varlist vallist)
+  (if (eq? var (car varlist))
+      (begin (set-box! (car vallist) (scheme->language val)) vallist))
+      (cons (car vallist) (update-in-frame-store var val (cdr varlist) (cdr vallist))))
 
 ; Returns the list of variables from a frame
-(define variables
-  (lambda (frame)
-    (car frame)))
+(define (variables frame) (car frame))
 
 ; Returns the store from a frame
-(define store
-  (lambda (frame)
-    (cadr frame)))
+(define (store frame) (cadr frame))
 
 ; returns list of variables from the first frame
-(define first-frame-variables
-  (lambda (env)
-    (caar env)))
+(define (first-frame-variables env)
+  (caar env))
 
 ; returns list of values from the first frame
-(define first-frame-values
-  (lambda (env)
-    (cadar env)))
-
-
+(define (first-frame-values env)
+  (cadar env))
 
 ; Functions to convert the Scheme #t and #f to our languages true and false, and back.
 
