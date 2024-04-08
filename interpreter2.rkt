@@ -48,12 +48,27 @@
 ; Calls a function in a value
 (define interpret-funcall-value
   (lambda (funcall environment throw)
+    (display funcall)
+    (display "\n")
+    (display environment)
+    (display "\n")
+    (display throw)
+    (display "\n")
+    ; ()
+    (display (lookup-in-env (cadr funcall) environment))
     '()
     ))
 
 ; Calls a function in a state
 (define interpret-funcall-state
   (lambda (funcall environment next throw)
+    (display funcall)
+    (display "\n")
+    (display environment)
+    (display "\n")
+    (display throw)
+    (display "\n")
+    '()
     '()
     ))
 
@@ -589,3 +604,9 @@
 (check-equal? (caaar add-function2) 'add)
 (check-equal? (car (caadar add-function2)) '(a b))
 (check-equal? (car (cdr (caadar add-function2))) '(return (+ a b)))
+
+;
+; (lambda (funcall environment throw)
+(interpret-funcall-value '(funcall add) add-function (lambda (v) v))
+
+;(((add) ((() (return 1) #<procedure:...ts/interpreter2.rkt:311:2>))))
