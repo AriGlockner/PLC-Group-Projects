@@ -323,6 +323,11 @@
 (define (get-fn-body-from-closure function_closure)
   (cadr function_closure))
 
+; takes in the closure and returns the function that creates a new environment
+; TODO: Replace this statement with the lookup function result from this function
+(define (get-env-creator-from-closure function_closure)
+  (caddr function_closure))
+
 ;----------------------------
 ; Environment/State Functions
 ;----------------------------
@@ -584,8 +589,8 @@
 (check-equal? (car (cdr (caadar add-function2))) '(return (+ a b)))
 
 ; create-closure -> formal parameters function
-(check-equal? (get-form-params-from-closure '((a b) ((= x (+ a b))) 'procedure)) '(a b))
+(check-equal? (get-form-params-from-closure '((a b) ((= x (+ a b))) procedure)) '(a b))
 ; create-closure -> function body function
-(check-equal? (get-fn-body-from-closure '((a b) ((= x (+ a b))) 'procedure)) '((= x (+ a b))))
-; create-closure -> ???
-(check-equal? (get-form-params-from-closure '((a b) ((= x (+ a b))) 'procedure)) '(a b))
+(check-equal? (get-fn-body-from-closure '((a b) ((= x (+ a b))) procedure)) '((= x (+ a b))))
+; create-closure -> env-creator-function
+(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
