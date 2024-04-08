@@ -644,6 +644,13 @@
 ;    #&10)) ((q l) (3 4))
 ;       ))
 
+; test lookup-function-closure
+(check-equal? (lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
+   ((() ((funcall myfunc 6 x)) procedure)
+    ((a b) ((= x (+ a b))) procedure)
+    #&10)) ((q l) (3 4))
+       )) '((a b) ((= x (+ a b))) procedure))
+
 
 ; create-closure -> formal parameters function
 (check-equal? (get-form-params-from-closure '((a b) ((= x (+ a b))) procedure)) '(a b))
