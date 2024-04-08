@@ -42,7 +42,20 @@
       ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
       ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
       ((eq? 'function (statement-type statement)) (interpret-function statement environment next))
+      ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment next throw))
       (else (myerror "Unknown statement:" (statement-type statement))))))  
+
+; Calls a function in a value
+(define interpret-funcall-value
+  (lambda (funcall environment throw)
+    '()
+    ))
+
+; Calls a function in a state
+(define interpret-funcall-state
+  (lambda (funcall environment next throw)
+    '()
+    ))
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
 ; (function swap (& x & y) ((var temp x) (= x y) (= y temp)))
@@ -161,6 +174,7 @@
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
+      ((eq? expr 'funcall) (return (interpret-funcall-value expr environment throw)))
       ((not (list? expr)) (return (lookup expr environment)))
       (else (return (eval-operator expr environment throw))))))
 
