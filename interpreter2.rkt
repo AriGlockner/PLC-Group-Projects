@@ -42,7 +42,34 @@
       ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
       ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
       ((eq? 'function (statement-type statement)) (interpret-function statement environment next))
+      ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment return break continue throw next))
       (else (myerror "Unknown statement:" (statement-type statement))))))  
+
+; Calls a function in a value
+(define (interpret-funcall-value funcall environment throw)
+  ; Get the function parameters
+  (let* ((func_name (get-function-name funcall))
+         (actual_params (get-actual-params funcall))
+         (closure (get-function-closure func_name environment))
+         (form_params (get-form-params-from-closure closure))
+         (fn_body (get-fn-body-from-closure closure))
+         (env-creator (get-env-creator-from-closure)))
+    
+    ; Interpret the function
+    (eval-expression fn_body (env-creator actual_params environment) throw)))
+
+; Calls a function in a state
+(define (interpret-funcall-state funcall environment return break continue throw next)
+  ; Get the function parameters
+  (let* ((func_name (get-function-name funcall))
+         (actual_params (get-actual-params funcall))
+         (closure (get-function-closure func_name environment))
+         (form_params (get-form-params-from-closure closure))
+         (fn_body (get-fn-body-from-closure closure))
+         (env-creator (get-env-creator-from-closure closure)))
+    
+    ; Interpret the function
+    (next (interpret-statement-list fn_body (env-creator actual_params environment) return break continue throw next))))
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
 ; (function swap (& x & y) ((var temp x) (= x y) (= y temp)))
@@ -184,6 +211,7 @@
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
+      ((eq? expr 'funcall) (return (interpret-funcall-value expr environment throw)))
       ((not (list? expr)) (return (lookup expr environment)))
       (else (return (eval-operator expr environment throw))))))
 
@@ -624,6 +652,11 @@
 (check-equal? (car (caadar add-function2)) '(a b))
 (check-equal? (car (cdr (caadar add-function2))) '(return (+ a b)))
 
+;
+; (lambda (funcall environment throw)
+(interpret-funcall-value '(funcall add) add-function (lambda (v) v))
+
+;(((add) ((() (return 1) #<procedure:...ts/interpreter2.rkt:311:2>))))
 
 ;(lookup-function-closure 'f '(((main myfunc x)
  ;  ((() ((funcall myfunc 6 x)) #<procedure:...ts/interpreter2.rkt:311:2>)
