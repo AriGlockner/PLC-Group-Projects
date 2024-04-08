@@ -77,9 +77,10 @@
 ; (function main () ((var x 10) (var y 15) (return (funcall gcd x y))))
 (define interpret-function
   (lambda (statement environment next)
-    (if (eq? 'main (car statement))
-        ; TODO: Run main function
-        (error "The main function is not yet implemented")
+    (if (eq? 'main (get-function-name statement))
+        ; Run main function
+        (interpret-funcall-state '(funcall main) (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment) (lambda (v) v) (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+                               (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))
         ; Add function to the environment
         (next (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment))
         )))
