@@ -243,63 +243,35 @@
   (lambda (expr op1value enviroment throw)
     (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v))))
 
-(define eval-binary-op2-cps
-  (lambda (expr op1value environment throw return)
-    (cond
-      ((eq? '+ (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (+ op1value r-op2)))))
-      ((eq? '- (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (- op1value r-op2)))))
-      ((eq? '* (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (* op1value r-op2)))))      
-      ((eq? '/ (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (quotient op1value r-op2)))))
-      ((eq? '% (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (remainder op1value r-op2)))))
-      ((eq? '== (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (isequal op1value r-op2)))))
-      ((eq? '!= (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (not(isequal op1value r-op2))))))
-      ((eq? '< (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (< op1value r-op2)))))
-      ((eq? '> (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (> op1value r-op2)))))
-      ((eq? '<= (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (<= op1value r-op2)))))
-      ((eq? '>= (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (>= op1value r-op2)))))
-      ((eq? '|| (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (or op1value r-op2)))))
-      ((eq? '&& (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (and op1value r-op2)))))
-      (else
-       (myerror "Unknown operator:" (operator expr))))))
+(define (eval-binary-op2-cps expr op1value environment throw return)
+  (cond
+    ((eq? '+ (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (+ op1value r-op2)))))
+    ((eq? '- (operator expr))
+       (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (- op1value r-op2)))))
+    ((eq? '* (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (* op1value r-op2)))))      
+    ((eq? '/ (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (quotient op1value r-op2)))))
+    ((eq? '% (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (remainder op1value r-op2)))))
+    ((eq? '== (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (isequal op1value r-op2)))))
+    ((eq? '!= (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (not(isequal op1value r-op2))))))
+    ((eq? '< (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (< op1value r-op2)))))
+    ((eq? '> (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (> op1value r-op2)))))
+    ((eq? '<= (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (<= op1value r-op2)))))
+    ((eq? '>= (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (>= op1value r-op2)))))
+    ((eq? '|| (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (or op1value r-op2)))))
+    ((eq? '&& (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (and op1value r-op2)))))
+    (else (myerror "Unknown operator:" (operator expr))))))
 
 ; Determines if two values are equal.  We need a special test because there are both boolean and integer types.
 (define isequal
@@ -313,8 +285,7 @@
 ; HELPER FUNCTIONS
 ;-----------------
 
-(define (atom? x)
-  (not (pair? x)))
+(define (atom? x) (not (pair? x)))
 
 ; These helper functions define the operator and operands of a value expression
 (define operator car)
@@ -322,13 +293,9 @@
 (define operand2 caddr)
 (define operand3 cadddr)
 
-(define exists-operand2?
-  (lambda (statement)
-    (not (null? (cddr statement)))))
+(define (exists-operand2? statement) (not (null? (cddr statement))))
 
-(define exists-operand3?
-  (lambda (statement)
-    (not (null? (cdddr statement)))))
+(define (exists-operand3? statement) (not (null? (cdddr statement))))
 
 ; these helper functions define the parts of the various statement types
 (define statement-type operator)
@@ -353,9 +320,7 @@
 
 (define get-actual-params cddr)
 
-(define catch-var
-  (lambda (catch-statement)
-    (car (operand1 catch-statement))))
+(define (catch-var catch-statement) (car (operand1 catch-statement)))
 
 ;------------------------
 ; Closure Functions
@@ -372,12 +337,10 @@
   (list formal_params body (create_closure_function formal_params)))
 
 ; takes in the function closure, just returns the list of formal parameters
-(define (get-form-params-from-closure function_closure)
-  (car function_closure))
+(define (get-form-params-from-closure function_closure) (car function_closure))
 
 ; takes in the closure and returns just the body
-(define (get-fn-body-from-closure function_closure)
-  (cadr function_closure))
+(define (get-fn-body-from-closure function_closure) (cadr function_closure))
 
 ; takes in the closure and returns the function that creates a new environment
 (define (get-env-creator-from-closure function_closure)
@@ -388,14 +351,10 @@
 ;----------------------------
 
 ; create a new empty environment
-(define initenvironment
-  (lambda ()
-    (list (emptyframe))))
+(define initenvironment (list (emptyframe)))
 
 ; create an empty frame: a frame is two lists, the first are the variables and the second is the "store" of values
-(define emptyframe
-  (lambda ()
-    '(() ())))
+(define emptyframe '(() ()))
 
 ; Creates a new environment for a function from the global variables and the parameters
 (define newenvironment
@@ -446,14 +405,10 @@
     (else env)))
 
 ; add a frame onto the top of the environment
-(define push-frame
-  (lambda (environment)
-    (cons (emptyframe) environment)))
+(define (push-frame environment) (cons (emptyframe) environment))
 
 ; remove a frame from the environment
-(define pop-frame
-  (lambda (environment)
-    (cdr environment)))
+(define (pop-frame environment) (cdr environment))
 
 ; some abstractions
 (define topframe car)
