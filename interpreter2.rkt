@@ -341,6 +341,17 @@
 (define (make_closure formal_params body state)
   (list formal_params body (create_closure_function formal_params)))
 
+; takes in the function closure, just returns the list of formal parameters
+(define (get-form-params-from-closure function_closure)
+  (car function_closure))
+
+; takes in the closure and returns just the body
+(define (get-fn-body-from-closure function_closure)
+  (cadr function_closure))
+
+; takes in the closure and returns the function that creates a new environment
+(define (get-env-creator-from-closure function_closure)
+  (caddr function_closure))
 
 ;----------------------------
 ; Environment/State Functions
@@ -614,8 +625,6 @@
 (check-equal? (car (cdr (caadar add-function2))) '(return (+ a b)))
 
 
-
-
 ;(lookup-function-closure 'f '(((main myfunc x)
  ;  ((() ((funcall myfunc 6 x)) #<procedure:...ts/interpreter2.rkt:311:2>)
  ;   ((a b) ((= x (+ a b))) #<procedure:...ts/interpreter2.rkt:311:2>)
@@ -634,3 +643,11 @@
 ;    ((a b) ((= x (+ a b))) procedure)
 ;    #&10)) ((q l) (3 4))
 ;       ))
+
+
+; create-closure -> formal parameters function
+(check-equal? (get-form-params-from-closure '((a b) ((= x (+ a b))) procedure)) '(a b))
+; create-closure -> function body function
+(check-equal? (get-fn-body-from-closure '((a b) ((= x (+ a b))) procedure)) '((= x (+ a b))))
+; create-closure -> env-creator-function
+(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
