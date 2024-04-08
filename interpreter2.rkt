@@ -324,7 +324,6 @@
   (cadr function_closure))
 
 ; takes in the closure and returns the function that creates a new environment
-; TODO: Replace this statement with the lookup function result from this function
 (define (get-env-creator-from-closure function_closure)
   (caddr function_closure))
 
