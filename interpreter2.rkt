@@ -42,7 +42,34 @@
       ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
       ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
       ((eq? 'function (statement-type statement)) (interpret-function statement environment next))
+      ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment return break continue throw next))
       (else (myerror "Unknown statement:" (statement-type statement))))))  
+
+; Calls a function in a value
+(define (interpret-funcall-value funcall environment throw)
+  ; Get the function parameters
+  (let* ((func_name (get-function-name funcall))
+         (actual_params (get-actual-params funcall))
+         (closure (lookup-function-closure func_name environment))
+         (form_params (get-form-params-from-closure closure))
+         (fn_body (get-fn-body-from-closure closure))
+         (env-creator (get-env-creator-from-closure)))
+    
+    ; Interpret the function
+    (eval-expression fn_body (env-creator actual_params environment) throw)))
+
+; Calls a function in a state
+(define (interpret-funcall-state funcall environment return break continue throw next)
+  ; Get the function parameters
+  (let* ((func_name (get-function-name funcall))
+         (actual_params (get-actual-params funcall))
+         (closure (lookup-function-closure func_name environment))
+         (form_params (get-form-params-from-closure closure))
+         (fn_body (get-fn-body-from-closure closure))
+         (env-creator (get-env-creator-from-closure closure)))
+    
+    ; Interpret the function
+    (next (interpret-statement-list fn_body (env-creator actual_params environment) return break continue throw next))))
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
 ; (function swap (& x & y) ((var temp x) (= x y) (= y temp)))
@@ -138,6 +165,29 @@
            (new-throw (create-throw-catch-continuation (get-catch statement) environment return break continue throw next finally-block)))
       (interpret-block try-block environment new-return new-break new-continue new-throw (lambda (env) (interpret-block finally-block env return break continue throw next))))))
 
+
+
+; get function closure
+(define lookup-function-closure
+  (lambda (function enviroment)
+    (cond
+      ; if empty we couldn't find it
+      ((equal? enviroment '((()()))) 
+       (error "function not found"))
+      ; if its not in that first frame remove first frame and try again
+      ((not (exists-in-list? function (first-frame-variables enviroment))) 
+       (lookup-function-closure function (pop-frame enviroment)))
+      ; if not the first variable in the first frame then remove first and then try again
+      ((not (eq? function (car (first-frame-variables enviroment)))) 
+       (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (cdr (first-frame-values enviroment))) (pop-frame enviroment))))
+      ; if its the first variable in the first frame then return the value
+      ((eq? function (car (first-frame-variables enviroment)))
+       (first-frame-values enviroment))
+      ; else something went wrong
+      (else
+       (error "lookup failed")
+       ))))
+
 ; helper methods so that I can reuse the interpret-block method on the try and finally blocks
 (define make-try-block
   (lambda (try-statement)
@@ -161,6 +211,7 @@
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
+      ((eq? expr 'funcall) (return (interpret-funcall-value expr environment throw)))
       ((not (list? expr)) (return (lookup expr environment)))
       (else (return (eval-operator expr environment throw))))))
 
@@ -262,6 +313,9 @@
 ; HELPER FUNCTIONS
 ;-----------------
 
+(define (atom? x)
+  (not (pair? x)))
+
 ; These helper functions define the operator and operands of a value expression
 (define operator car)
 (define operand1 cadr)
@@ -297,6 +351,8 @@
 (define get-formal-params caddr)
 (define get-function-body cadddr)
 
+(define get-actual-params cddr)
+
 (define catch-var
   (lambda (catch-statement)
     (car (operand1 catch-statement))))
@@ -315,6 +371,17 @@
 (define (make_closure formal_params body state)
   (list formal_params body (create_closure_function formal_params)))
 
+; takes in the function closure, just returns the list of formal parameters
+(define (get-form-params-from-closure function_closure)
+  (car function_closure))
+
+; takes in the closure and returns just the body
+(define (get-fn-body-from-closure function_closure)
+  (cadr function_closure))
+
+; takes in the closure and returns the function that creates a new environment
+(define (get-env-creator-from-closure function_closure)
+  (caddr function_closure))
 
 ;----------------------------
 ; Environment/State Functions
@@ -513,6 +580,17 @@
   (lambda (frame)
     (cadr frame)))
 
+; returns list of variables from the first frame
+(define first-frame-variables
+  (lambda (env)
+    (caar env)))
+
+; returns list of values from the first frame
+(define first-frame-values
+  (lambda (env)
+    (cadar env)))
+
+
 
 ; Functions to convert the Scheme #t and #f to our languages true and false, and back.
 
@@ -575,3 +653,43 @@
 (check-equal? (caaar add-function2) 'add)
 (check-equal? (car (caadar add-function2)) '(a b))
 (check-equal? (car (cdr (caadar add-function2))) '(return (+ a b)))
+
+;
+; (lambda (funcall environment throw)
+;(interpret-funcall-value '(funcall add) add-function (lambda (v) v))
+
+;(((add) ((() (return 1) #<procedure:...ts/interpreter2.rkt:311:2>))))
+
+;(lookup-function-closure 'f '(((main myfunc x)
+ ;  ((() ((funcall myfunc 6 x)) #<procedure:...ts/interpreter2.rkt:311:2>)
+ ;   ((a b) ((= x (+ a b))) #<procedure:...ts/interpreter2.rkt:311:2>)
+;    #&10)))
+
+
+;(interpret "scratch.bad")
+
+;(lookup 'r '(((z r) (1 2)) ((main myfunc x)
+ ;  ((() ((funcall myfunc 6 x)) procedure)
+ ;   ((a b) ((= x (+ a b))) procedure)
+ ;   #&10))))
+
+;(lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
+;   ((() ((funcall myfunc 6 x)) procedure)
+;    ((a b) ((= x (+ a b))) procedure)
+;    #&10)) ((q l) (3 4))
+;       ))
+
+; test lookup-function-closure
+(check-equal? (lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
+   ((() ((funcall myfunc 6 x)) procedure)
+    ((a b) ((= x (+ a b))) procedure)
+    #&10)) ((q l) (3 4))
+       )) '((a b) ((= x (+ a b))) procedure))
+
+
+; create-closure -> formal parameters function
+(check-equal? (get-form-params-from-closure '((a b) ((= x (+ a b))) procedure)) '(a b))
+; create-closure -> function body function
+(check-equal? (get-fn-body-from-closure '((a b) ((= x (+ a b))) procedure)) '((= x (+ a b))))
+; create-closure -> env-creator-function
+(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
