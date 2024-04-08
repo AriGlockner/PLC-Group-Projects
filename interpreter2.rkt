@@ -50,7 +50,7 @@
   ; Get the function parameters
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
-         (closure (get-function-closure func_name environment))
+         (closure (lookup-function-closure func_name environment))
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
          (env-creator (get-env-creator-from-closure)))
@@ -63,7 +63,7 @@
   ; Get the function parameters
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
-         (closure (get-function-closure func_name environment))
+         (closure (lookup-function-closure func_name environment))
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
          (env-creator (get-env-creator-from-closure closure)))
@@ -350,6 +350,8 @@
 
 (define get-formal-params caddr)
 (define get-function-body cadddr)
+
+(define get-actual-params cddr)
 
 (define catch-var
   (lambda (catch-statement)
@@ -654,7 +656,7 @@
 
 ;
 ; (lambda (funcall environment throw)
-(interpret-funcall-value '(funcall add) add-function (lambda (v) v))
+;(interpret-funcall-value '(funcall add) add-function (lambda (v) v))
 
 ;(((add) ((() (return 1) #<procedure:...ts/interpreter2.rkt:311:2>))))
 
