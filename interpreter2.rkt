@@ -657,7 +657,7 @@
 
 ;
 ; (lambda (funcall environment throw)
-(interpret-funcall-value '(funcall add) add-function (lambda (v) v))
+;(interpret-funcall-value '(funcall add) add-function (lambda (v) v))
 
 ;(((add) ((() (return 1) #<procedure:...ts/interpreter2.rkt:311:2>))))
 
