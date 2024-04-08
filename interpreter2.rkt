@@ -315,6 +315,9 @@
 (define (make_closure formal_params body state)
   (list formal_params body (create_closure_function formal_params)))
 
+; takes in the function closure, just returns the list of formal parameters
+(define (get-form-params-from-closure function_closure)
+  (car function_closure))
 
 ;----------------------------
 ; Environment/State Functions
@@ -575,3 +578,6 @@
 (check-equal? (caaar add-function2) 'add)
 (check-equal? (car (caadar add-function2)) '(a b))
 (check-equal? (car (cdr (caadar add-function2))) '(return (+ a b)))
+
+; create-closure -> formal parameters function
+(check-equal? (get-form-params-from-closure '((a b) ((= x (+ a b))) 'procedure)) '(a b))
