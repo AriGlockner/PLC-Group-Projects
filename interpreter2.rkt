@@ -46,31 +46,30 @@
       (else (myerror "Unknown statement:" (statement-type statement))))))  
 
 ; Calls a function in a value
-(define interpret-funcall-value
-  (lambda (funcall environment throw)
-    (display funcall)
-    (display "\n")
-    (display environment)
-    (display "\n")
-    (display throw)
-    (display "\n")
-    ; ()
-    (display (lookup-in-env (cadr funcall) environment))
-    '()
-    ))
+(define (interpret-funcall-value funcall environment throw)
+  ; Get the function parameters
+  (let* ((func_name (get-function-name funcall))
+         (actual_params (get-actual-params funcall))
+         (closure (get-function-closure func_name environment))
+         (form_params (get-form-params-from-closure closure))
+         (fn_body (get-fn-body-from-closure closure))
+         (env-creator (get-env-creator-from-closure)))
+    
+    ; Interpret the function
+    (eval-expression fn_body (env-creator actual_params environment))))
 
 ; Calls a function in a state
-(define interpret-funcall-state
-  (lambda (funcall environment next throw)
-    (display funcall)
-    (display "\n")
-    (display environment)
-    (display "\n")
-    (display throw)
-    (display "\n")
-    '()
-    '()
-    ))
+(define (interpret-funcall-state funcall environment next throw)
+  ; Get the function parameters
+  (let* ((func_name (get-function-name funcall))
+         (actual_params (get-actual-params funcall))
+         (closure (get-function-closure func_name environment))
+         (form_params (get-form-params-from-closure closure))
+         (fn_body (get-fn-body-from-closure closure))
+         (env-creator (get-env-creator-from-closure closure)))
+    
+    ; Interpret the function
+    (next (interpret-statement-list fn_body (env-creator actual_params environment) return break continue throw next))))
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
 ; (function swap (& x & y) ((var temp x) (= x y) (= y temp)))
