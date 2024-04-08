@@ -138,6 +138,29 @@
            (new-throw (create-throw-catch-continuation (get-catch statement) environment return break continue throw next finally-block)))
       (interpret-block try-block environment new-return new-break new-continue new-throw (lambda (env) (interpret-block finally-block env return break continue throw next))))))
 
+
+
+; get function closure
+(define lookup-function-closure
+  (lambda (function enviroment)
+    (cond
+      ; if empty we couldn't find it
+      ((equal? enviroment '((()()))) 
+       (error "function not found"))
+      ; if its not in that first frame remove first frame and try again
+      ((not (exists-in-list? function (first-frame-variables enviroment))) 
+       (lookup-function-closure function (pop-frame enviroment)))
+      ; if not the first variable in the first frame then remove first and then try again
+      ((not (eq? function (car (first-frame-variables enviroment)))) 
+       (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (cdr (first-frame-values enviroment))) (pop-frame enviroment))))
+      ; if its the first variable in the first frame then return the value
+      ((eq? function (car (first-frame-variables enviroment)))
+       (first-frame-values enviroment))
+      ; else something went wrong
+      (else
+       (error "lookup failed")
+       ))))
+
 ; helper methods so that I can reuse the interpret-block method on the try and finally blocks
 (define make-try-block
   (lambda (try-statement)
@@ -261,6 +284,9 @@
 ;-----------------
 ; HELPER FUNCTIONS
 ;-----------------
+
+(define (atom? x)
+  (not (pair? x)))
 
 ; These helper functions define the operator and operands of a value expression
 (define operator car)
@@ -513,6 +539,17 @@
   (lambda (frame)
     (cadr frame)))
 
+; returns list of variables from the first frame
+(define first-frame-variables
+  (lambda (env)
+    (caar env)))
+
+; returns list of values from the first frame
+(define first-frame-values
+  (lambda (env)
+    (cadar env)))
+
+
 
 ; Functions to convert the Scheme #t and #f to our languages true and false, and back.
 
@@ -575,3 +612,25 @@
 (check-equal? (caaar add-function2) 'add)
 (check-equal? (car (caadar add-function2)) '(a b))
 (check-equal? (car (cdr (caadar add-function2))) '(return (+ a b)))
+
+
+
+
+;(lookup-function-closure 'f '(((main myfunc x)
+ ;  ((() ((funcall myfunc 6 x)) #<procedure:...ts/interpreter2.rkt:311:2>)
+ ;   ((a b) ((= x (+ a b))) #<procedure:...ts/interpreter2.rkt:311:2>)
+;    #&10)))
+
+
+;(interpret "scratch.bad")
+
+;(lookup 'r '(((z r) (1 2)) ((main myfunc x)
+ ;  ((() ((funcall myfunc 6 x)) procedure)
+ ;   ((a b) ((= x (+ a b))) procedure)
+ ;   #&10))))
+
+(lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
+   ((() ((funcall myfunc 6 x)) procedure)
+    ((a b) ((= x (+ a b))) procedure)
+    #&10)) ((q l) (3 4))
+       ))

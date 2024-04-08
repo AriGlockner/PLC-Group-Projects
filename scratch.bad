@@ -1,0 +1,9 @@
+var x = 10;
+
+function myfunc(a, b) {
+  x = a + b;
+}
+
+function main() {
+  myfunc(6, x);
+}
