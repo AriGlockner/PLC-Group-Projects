@@ -271,7 +271,7 @@
      (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (or op1value r-op2)))))
     ((eq? '&& (operator expr))
      (eval-expression-cps (operand2 expr) environment throw (lambda (r-op2) (return (and op1value r-op2)))))
-    (else (myerror "Unknown operator:" (operator expr))))))
+    (else (myerror "Unknown operator:" (operator expr)))))
 
 ; Determines if two values are equal.  We need a special test because there are both boolean and integer types.
 (define isequal
@@ -351,10 +351,12 @@
 ;----------------------------
 
 ; create a new empty environment
-(define initenvironment (list (emptyframe)))
+(define initenvironment
+  (lambda ()
+    (list (emptyframe))))
 
 ; create an empty frame: a frame is two lists, the first are the variables and the second is the "store" of values
-(define emptyframe '(() ()))
+(define (emptyframe) '(() ()))
 
 ; Creates a new environment for a function from the global variables and the parameters
 (define newenvironment
