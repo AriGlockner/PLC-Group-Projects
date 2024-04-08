@@ -460,33 +460,28 @@
 (define remainingframes cdr)
 
 ; does a variable exist in the environment?
-(define exists?
-  (lambda (var environment)
-    (cond
-      ((null? environment) #f)
-      ((exists-in-list? var (variables (topframe environment))) #t)
-      (else (exists? var (remainingframes environment))))))
+(define (exists? var environment)
+  (cond
+    ((null? environment) #f)
+    ((exists-in-list? var (variables (topframe environment))) #t)
+    (else (exists? var (remainingframes environment)))))
 
 ; does a variable exist in a list?
-(define exists-in-list?
-  (lambda (var l)
-    (cond
-      ((null? l) #f)
-      ((eq? var (car l)) #t)
-      (else (exists-in-list? var (cdr l))))))
+(define (exists-in-list? var l)
+  (cond
+    ((null? l) #f)
+    ((eq? var (car l)) #t)
+    (else (exists-in-list? var (cdr l)))))
 
 ; Looks up a value in the environment.  If the value is a boolean, it converts our languages boolean type to a Scheme boolean type
-(define lookup
-  (lambda (var environment)
-    (lookup-variable var environment)))
+(define (lookup var environment) (lookup-variable var environment))
   
 ; A helper function that does the lookup.  Returns an error if the variable does not have a legal value
-(define lookup-variable
-  (lambda (var environment)
-    (let ((value (lookup-in-env var environment)))
-      (if (eq? 'novalue value)
-          (myerror "error: variable without an assigned value:" var)
-          value))))
+(define (lookup-variable var environment)
+  (let ((value (lookup-in-env var environment)))
+    (if (eq? 'novalue value)
+        (myerror "error: variable without an assigned value:" var)
+        value)))
 
 ; Return the value bound to a variable in the environment
 (define (lookup-in-env var environment)
