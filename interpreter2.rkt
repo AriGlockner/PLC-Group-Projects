@@ -47,50 +47,39 @@
 
 ; Calls a function in a value
 (define (interpret-funcall-value funcall environment throw)
-  (display (get-function-name funcall))
-  (newline)
-  (display (lookup-function-closure (get-function-name funcall) environment))
-  (newline)
-  (display environment)
-  (newline)
+  ;(display "fn closure: ")
+  ;(display (lookup-function-closure (get-function-name funcall) environment))
+  ;(newline)
+  ;(display "env: ")
+  ;(display environment)
+  ;(newline)
   ; Get the function parameters
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
          (closure (lookup-function-closure func_name environment))
-         ;(display closure)
-         ;(newline)
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
          (env-creator (get-env-creator-from-closure closure)))
     
     ; Interpret the function
-    (eval-expression fn_body (env-creator environment actual_params) throw)))
+    (interpret-statement-list
+     fn_body
+     (env-creator environment actual_params)
+     (lambda (v) v)
+     (lambda (env) (myerror "Break used outside of loop"))
+     (lambda (env) (myerror "Continue used outside of loop"))
+     throw
+     (lambda (env) env))))
 
 ; Calls a function in a state
 (define (interpret-funcall-state funcall environment return break continue throw next)
   ; Get the function parameters
-  ;(display environment)
-  ;(display "\n")
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
          (closure (lookup-function-closure func_name environment))
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
          (env-creator (get-env-creator-from-closure closure)))
-    ;(display func_name)
-;    (display "\nclosure: ")
- ;   (display closure)
-         ;(display "\n")
-         ;(display env-creator)
-         ;(display "\n")
-  ;  (display "\nformal params: ")
-   ; (display form_params)
-;    (display "\nactual_params: ")
-;    (display actual_params)
-    
-    ; Interpret the function
-;    (display "\nenvironment: ")
-;    (display environment)
     (next (interpret-statement-list fn_body (env-creator environment actual_params) return break continue throw next))))
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
@@ -233,8 +222,9 @@
 
 (define eval-expression-cps
   (lambda (expr environment throw return)
-    (display expr)
-    (newline)
+    ;(display "expr: ")
+    ;(display expr)
+    ;(newline)
     (cond
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
@@ -392,12 +382,6 @@
 ; Create Closure Function
 (define (create_closure_function formal_param_list)
   (lambda (current_env actual_param_list)
-    ;(display "\nget-globals current_env: ")
-    ;(display (get-globals current_env))
-;    (display "\nactual in create_closure_function: ")
- ;   (display actual_param_list)
-  ;  (display "\ncurrent_env in create_closure_function: ")
-   ; (display current_env)
     (function-environment current_env actual_param_list formal_param_list)))
 
 
@@ -534,8 +518,6 @@
 ; Return the value bound to a variable in the frame
 (define lookup-in-frame
   (lambda (var frame)
-    (display frame)
-    (newline)
     (cond
       ((not (exists-in-list? var (variables frame))) (myerror "error: undefined variable" var))
       (else (language->scheme (unbox (get-value (indexof var (variables frame)) (store frame))))))))
@@ -551,7 +533,6 @@
 ; Get the value stored at a given index in the list
 (define get-value
   (lambda (n l)
-    ;(display l)
     (cond
       ((zero? n) (car l))
       (else (get-value (- n 1) (cdr l))))))
@@ -590,7 +571,6 @@
 ; Changes the binding of a variable in the environment to a new value
 (define update-existing
   (lambda (var val environment)
-    ;(display environment)
     (if (exists-in-list? var (variables (car environment)))
         (cons (update-in-frame var val (topframe environment)) (remainingframes environment))
         (cons (topframe environment) (update-existing var val (remainingframes environment))))))
