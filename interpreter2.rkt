@@ -272,13 +272,11 @@
 (define operand2 caddr)
 (define operand3 cadddr)
 
-(define exists-operand2?
-  (lambda (statement)
-    (not (null? (cddr statement)))))
+(define (exists-operand2? statement)
+  (not (null? (cddr statement))))
 
-(define exists-operand3?
-  (lambda (statement)
-    (not (null? (cdddr statement)))))
+(define (exists-operand3? statement)
+  (not (null? (cdddr statement))))
 
 ; these helper functions define the parts of the various statement types
 (define statement-type operator)
@@ -303,9 +301,7 @@
 
 (define get-actual-params cddr)
 
-(define catch-var
-  (lambda (catch-statement)
-    (car (operand1 catch-statement))))
+(define (catch-var catch-statement) (car (operand1 catch-statement)))
 
 ;------------------------
 ; Closure Functions
@@ -314,17 +310,7 @@
 ; Create Closure Function
 (define (create_closure_function formal_param_list)
   (lambda (current_env actual_param_list)
-    ;(display "\nget-globals current_env: ")
-    ;(display (get-globals current_env))
-;    (display "\nactual in create_closure_function: ")
- ;   (display actual_param_list)
-  ;  (display "\ncurrent_env in create_closure_function: ")
-   ; (display current_env)
     (function-environment current_env actual_param_list formal_param_list)))
-
-
-;     (get-globals current_env)
- ;                   (bind-actual-formal actual_param_list formal_param_list current_env))))
 
 ; Makes the closure
 (define (make_closure formal_params body state)
