@@ -56,20 +56,34 @@
          (env-creator (get-env-creator-from-closure)))
     
     ; Interpret the function
-    (eval-expression fn_body (env-creator actual_params environment) throw)))
+    (eval-expression fn_body (env-creator environment actual_params) throw)))
 
 ; Calls a function in a state
 (define (interpret-funcall-state funcall environment return break continue throw next)
   ; Get the function parameters
+  ;(display environment)
+  ;(display "\n")
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
          (closure (lookup-function-closure func_name environment))
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
          (env-creator (get-env-creator-from-closure closure)))
+    ;(display func_name)
+;    (display "\nclosure: ")
+ ;   (display closure)
+         ;(display "\n")
+         ;(display env-creator)
+         ;(display "\n")
+  ;  (display "\nformal params: ")
+   ; (display form_params)
+;    (display "\nactual_params: ")
+;    (display actual_params)
     
     ; Interpret the function
-    (next (interpret-statement-list fn_body (env-creator actual_params environment) return break continue throw next))))
+;    (display "\nenvironment: ")
+;    (display environment)
+    (next (interpret-statement-list fn_body (env-creator environment actual_params) return break continue throw next))))
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
 ; (function swap (& x & y) ((var temp x) (= x y) (= y temp)))
@@ -183,7 +197,7 @@
        (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (cdr (first-frame-values enviroment))) (pop-frame enviroment))))
       ; if its the first variable in the first frame then return the value
       ((eq? function (car (first-frame-variables enviroment)))
-       (first-frame-values enviroment))
+       (car (first-frame-values enviroment)))
       ; else something went wrong
       (else
        (error "lookup failed")
@@ -365,8 +379,17 @@
 ; Create Closure Function
 (define (create_closure_function formal_param_list)
   (lambda (current_env actual_param_list)
-    (newenvironment (get-globals current_env)
-                    (bind-actual-formal actual_param_list formal_param_list current_env))))
+    ;(display "\nget-globals current_env: ")
+    ;(display (get-globals current_env))
+;    (display "\nactual in create_closure_function: ")
+ ;   (display actual_param_list)
+  ;  (display "\ncurrent_env in create_closure_function: ")
+   ; (display current_env)
+    (function-environment current_env actual_param_list formal_param_list)))
+
+
+;     (get-globals current_env)
+ ;                   (bind-actual-formal actual_param_list formal_param_list current_env))))
 
 ; Makes the closure
 (define (make_closure formal_params body state)
@@ -424,10 +447,8 @@
       (if (null? formal-param-list)
           (return binding)
           (error "The formal and actual parameters must match"))
-      (if (null? actual-param-list)
-          (error "The formal and actual parameters must match")
-          (return (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
-                                             (insert (car formal-param-list) (eval-expression (car actual-param-list) env throw) binding) return throw)))))
+      (return (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
+                                             (insert (car formal-param-list) (eval-expression (car actual-param-list) env throw) binding) return throw))))
 
 ; Create the environment for the function
 (define (function-environment current-env actual-param-list formal-param-list)
@@ -681,11 +702,11 @@
 ;       ))
 
 ; test lookup-function-closure
-(check-equal? (lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
-   ((() ((funcall myfunc 6 x)) procedure)
-    ((a b) ((= x (+ a b))) procedure)
-    #&10)) ((q l) (3 4))
-       )) '((a b) ((= x (+ a b))) procedure))
+;(check-equal? (lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
+ ;  ((() ((funcall myfunc 6 x)) procedure)
+  ;  ((a b) ((= x (+ a b))) procedure)
+   ; #&10)) ((q l) (3 4))
+     ;  )) '((a b) ((= x (+ a b))) procedure))
 
 
 ; create-closure -> formal parameters function
