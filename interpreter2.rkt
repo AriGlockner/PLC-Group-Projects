@@ -496,35 +496,29 @@
 ; returns list of values from the first frame
 (define (first-frame-values env) (cadar env))
 
-
-
 ; Functions to convert the Scheme #t and #f to our languages true and false, and back.
+(define (language->scheme v)
+  (cond 
+    ((eq? v 'false) #f)
+    ((eq? v 'true) #t)
+    (else v)))
 
-(define language->scheme
-  (lambda (v) 
-    (cond 
-      ((eq? v 'false) #f)
-      ((eq? v 'true) #t)
-      (else v))))
-
-(define scheme->language
-  (lambda (v)
-    (cond
-      ((eq? v #f) 'false)
-      ((eq? v #t) 'true)
-      (else v))))
+(define (scheme->language v)
+  (cond
+    ((eq? v #f) 'false)
+    ((eq? v #t) 'true)
+    (else v)))
 
 ; Because the error function is not defined in R5RS scheme, I create my own:
 (define error-break (lambda (v) v))
 (call-with-current-continuation (lambda (k) (set! error-break k)))
 
-(define myerror
-  (lambda (str . vals)
-    (letrec ((makestr (lambda (str vals)
-                        (if (null? vals)
-                            str
-                            (makestr (string-append str (string-append " " (symbol->string (car vals)))) (cdr vals))))))
-      (error-break (display (string-append (string-append str (makestr "" vals)) "\n"))))))
+(define (myerror str . vals)
+  (letrec ((makestr (lambda (str vals)
+                      (if (null? vals)
+                          str
+                          (makestr (string-append str (string-append " " (symbol->string (car vals)))) (cdr vals))))))
+    (error-break (display (string-append (string-append str (makestr "" vals)) "\n")))))
 
 
 (display "Start Debugging:\n")
