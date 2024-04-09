@@ -442,30 +442,26 @@
       (get-value (- n 1) (cdr l))))
 
 ; Adds a new variable/value binding pair into the environment.  Gives an error if the variable (or a function) already exists in this frame.
-(define insert
-  (lambda (var val environment)
-    (if (exists-in-list? var (variables (car environment)))
-        (myerror "error: variable is being re-declared:" var)
-        (cons (add-to-frame var val (car environment)) (cdr environment)))))
+(define (insert var val environment)
+  (if (exists-in-list? var (variables (car environment)))
+      (myerror "error: variable is being re-declared:" var)
+      (cons (add-to-frame var val (car environment)) (cdr environment))))
 
 ; Adds a new function/(params) (body) pair into the environment. Gives an error if the function (or a variable) already exists in this frame.
-(define insert-function
-  (lambda (name formal-params func-body environment)
-    (if (exists-in-list? name (variables (car environment)))
-        (myerror "error: variable is being re-declared:" name)
-        (cons (add-func-to-frame name (make_closure formal-params func-body environment) (car environment)) (cdr environment)))))
+(define (insert-function name formal-params func-body environment)
+  (if (exists-in-list? name (variables (car environment)))
+      (myerror "error: variable is being re-declared:" name)
+      (cons (add-func-to-frame name (make_closure formal-params func-body environment) (car environment)) (cdr environment))))
 
 ; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
-(define update
-  (lambda (var val environment)
-    (if (exists? var environment)
-        (update-existing var val environment)
-        (myerror "error: variable used but not defined:" var))))
+(define (update var val environment)
+  (if (exists? var environment)
+      (update-existing var val environment)
+      (myerror "error: variable used but not defined:" var)))
 
 ; Add a new variable/value pair to the frame.
-(define add-to-frame
-  (lambda (var val frame)
-    (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame)))))
+(define (add-to-frame var val frame)
+  (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame))))
 
 ; Add a new name,function_closure pair to the frame.
 (define add-func-to-frame
@@ -473,29 +469,23 @@
     (list (cons name (variables frame)) (cons closure (store frame)))))
 
 ; Changes the binding of a variable in the environment to a new value
-(define update-existing
-  (lambda (var val environment)
-    ;(display environment)
-    (if (exists-in-list? var (variables (car environment)))
-        (cons (update-in-frame var val (topframe environment)) (remainingframes environment))
-        (cons (topframe environment) (update-existing var val (remainingframes environment))))))
+(define (update-existing var val environment)
+  (if (exists-in-list? var (variables (car environment)))
+      (cons (update-in-frame var val (topframe environment)) (remainingframes environment))
+      (cons (topframe environment) (update-existing var val (remainingframes environment)))))
 
 ; Changes the binding of a variable in the frame to a new value.
-(define update-in-frame
-  (lambda (var val frame)
-    (list (variables frame) (update-in-frame-store var val (variables frame) (store frame)))))
+(define (update-in-frame var val frame)
+  (list (variables frame) (update-in-frame-store var val (variables frame) (store frame))))
 
 ; Changes a variable binding by placing the new value in the appropriate place in the store
-(define update-in-frame-store
-  (lambda (var val varlist vallist)
-    (cond
-      ((eq? var (car varlist)) (begin (set-box! (car vallist) (scheme->language val)) vallist))
-      (else (cons (car vallist) (update-in-frame-store var val (cdr varlist) (cdr vallist)))))))
+(define (update-in-frame-store var val varlist vallist)
+  (if (eq? var (car varlist))
+      (begin (set-box! (car vallist) (scheme->language val)) vallist)
+      (cons (car vallist) (update-in-frame-store var val (cdr varlist) (cdr vallist)))))
 
 ; Returns the list of variables from a frame
-(define variables
-  (lambda (frame)
-    (car frame)))
+(define (variables frame) (car frame))
 
 ; Returns the store from a frame
 (define store
