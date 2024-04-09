@@ -1,4 +1,5 @@
-var x;
+function main() {
+  var x;
 
 try {
   x = 0;
@@ -15,3 +16,4 @@ catch (e1) {
   x = x + e1;
 }
 return x;
+}
