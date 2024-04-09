@@ -333,14 +333,10 @@
 ;----------------------------
 
 ; create a new empty environment
-(define initenvironment
-  (lambda ()
-    (list (emptyframe))))
+(define (initenvironment) (list (emptyframe)))
 
 ; create an empty frame: a frame is two lists, the first are the variables and the second is the "store" of values
-(define emptyframe
-  (lambda ()
-    '(() ())))
+(define (emptyframe) '(() ()))
 
 ; Creates a new environment for a function from the global variables and the parameters
 (define (newenvironment global params)
