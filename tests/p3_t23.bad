@@ -1,4 +1,4 @@
-function swap(x y) {
+function swap(x, y) {
   var temp = x;
   x = y;
   y = temp;
