@@ -488,19 +488,13 @@
 (define (variables frame) (car frame))
 
 ; Returns the store from a frame
-(define store
-  (lambda (frame)
-    (cadr frame)))
+(define (store frame) (cadr frame))
 
 ; returns list of variables from the first frame
-(define first-frame-variables
-  (lambda (env)
-    (caar env)))
+(define (first-frame-variables env) (caar env))
 
 ; returns list of values from the first frame
-(define first-frame-values
-  (lambda (env)
-    (cadar env)))
+(define (first-frame-values env) (cadar env))
 
 
 
