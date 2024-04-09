@@ -91,224 +91,180 @@
       (next (insert (get-declare-var statement) 'novalue environment))))
 
 ; Updates the environment to add a new binding for a variable
-(define interpret-assign
-  (lambda (statement environment next throw)
-    (next (update (get-assign-lhs statement) (eval-expression (get-assign-rhs statement) environment throw) environment))))
+(define (interpret-assign statement environment next throw)
+  (next (update (get-assign-lhs statement) (eval-expression (get-assign-rhs statement) environment throw) environment)))
 
 ; We need to check if there is an else condition.  Otherwise, we evaluate the expression and do the right thing.
-(define interpret-if
-  (lambda (statement environment return break continue throw next)
-    (cond
-      ((eval-expression (get-condition statement) environment throw) (interpret-statement (get-then statement) environment return break continue throw next))
-      ((exists-else? statement) (interpret-statement (get-else statement) environment return break continue throw next))
-      (else (next environment)))))
+(define (interpret-if statement environment return break continue throw next)
+  (cond
+    ((eval-expression (get-condition statement) environment throw) (interpret-statement (get-then statement) environment return break continue throw next))
+    ((exists-else? statement) (interpret-statement (get-else statement) environment return break continue throw next))
+    (else (next environment))))
 
 ; Interprets a while loop.  We must create break and continue continuations for this loop
-(define interpret-while
-  (lambda (statement environment return throw next)
-    (letrec ((loop (lambda (condition body environment)
-                     (if (eval-expression condition environment throw)
-                         (interpret-statement body environment return (lambda (env) (next env)) (lambda (env) (loop condition body env)) throw (lambda (env) (loop condition body env)))
-                         (next environment)))))
-      (loop (get-condition statement) (get-body statement) environment))))
+(define (interpret-while statement environment return throw next)
+  (letrec ((loop (lambda (condition body environment)
+                   (if (eval-expression condition environment throw)
+                       (interpret-statement body environment return (lambda (env) (next env)) (lambda (env) (loop condition body env)) throw (lambda (env) (loop condition body env)))
+                       (next environment)))))
+    (loop (get-condition statement) (get-body statement) environment)))
 
 ; Interprets a block.  The break, continue, throw and "next statement" continuations must be adjusted to pop the environment
-(define interpret-block
-  (lambda (statement environment return break continue throw next)
-    (interpret-statement-list (cdr statement)
-                                         (push-frame environment)
-                                         return
-                                         (lambda (env) (break (pop-frame env)))
-                                         (lambda (env) (continue (pop-frame env)))
-                                         (lambda (v env) (throw v (pop-frame env)))
-                                         (lambda (env) (next (pop-frame env))))))
+(define (interpret-block statement environment return break continue throw next)
+  (interpret-statement-list (cdr statement)
+                                       (push-frame environment)
+                                       return
+                                       (lambda (env) (break (pop-frame env)))
+                                       (lambda (env) (continue (pop-frame env)))
+                                       (lambda (v env) (throw v (pop-frame env)))
+                                       (lambda (env) (next (pop-frame env)))))
 
 ; We use a continuation to throw the proper value.  Because we are not using boxes, the environment/state must be thrown as well so any environment changes will be kept
-(define interpret-throw
-  (lambda (statement environment throw)
-    (throw (eval-expression (get-expr statement) environment throw) environment)))
+(define (interpret-throw statement environment throw)
+  (throw (eval-expression (get-expr statement) environment throw) environment))
 
 ; Interpret a try-catch-finally block
 
 ; Create a continuation for the throw.  If there is no catch, it has to interpret the finally block, and once that completes throw the exception.
 ;   Otherwise, it interprets the catch block with the exception bound to the thrown value and interprets the finally block when the catch is done
-(define create-throw-catch-continuation
-  (lambda (catch-statement environment return break continue throw next finally-block)
-    (cond
-      ((null? catch-statement) (lambda (ex env) (interpret-block finally-block env return break continue throw (lambda (env2) (throw ex env2))))) 
-      ((not (eq? 'catch (statement-type catch-statement))) (myerror "Incorrect catch statement"))
-      (else (lambda (ex env)
-                  (interpret-statement-list 
-                       (get-body catch-statement) 
-                       (insert (catch-var catch-statement) ex (push-frame env))
-                       return 
-                       (lambda (env2) (break (pop-frame env2))) 
-                       (lambda (env2) (continue (pop-frame env2))) 
-                       (lambda (v env2) (throw v (pop-frame env2))) 
-                       (lambda (env2) (interpret-block finally-block (pop-frame env2) return break continue throw next))))))))
+(define (create-throw-catch-continuation catch-statement environment return break continue throw next finally-block)
+  (cond
+    ((null? catch-statement) (lambda (ex env) (interpret-block finally-block env return break continue throw (lambda (env2) (throw ex env2))))) 
+    ((not (eq? 'catch (statement-type catch-statement))) (myerror "Incorrect catch statement"))
+    (else (lambda (ex env)
+                (interpret-statement-list 
+                     (get-body catch-statement) 
+                     (insert (catch-var catch-statement) ex (push-frame env))
+                     return 
+                     (lambda (env2) (break (pop-frame env2))) 
+                     (lambda (env2) (continue (pop-frame env2))) 
+                     (lambda (v env2) (throw v (pop-frame env2))) 
+                     (lambda (env2) (interpret-block finally-block (pop-frame env2) return break continue throw next)))))))
 
 ; To interpret a try block, we must adjust  the return, break, continue continuations to interpret the finally block if any of them are used.
 ;  We must create a new throw continuation and then interpret the try block with the new continuations followed by the finally block with the old continuations
-(define interpret-try
-  (lambda (statement environment return break continue throw next)
-    (let* ((finally-block (make-finally-block (get-finally statement)))
-           (try-block (make-try-block (get-try statement)))
-           (new-return (lambda (v) (interpret-block finally-block environment return break continue throw (lambda (env2) (return v)))))
-           (new-break (lambda (env) (interpret-block finally-block env return break continue throw (lambda (env2) (break env2)))))
-           (new-continue (lambda (env) (interpret-block finally-block env return break continue throw (lambda (env2) (continue env2)))))
-           (new-throw (create-throw-catch-continuation (get-catch statement) environment return break continue throw next finally-block)))
-      (interpret-block try-block environment new-return new-break new-continue new-throw (lambda (env) (interpret-block finally-block env return break continue throw next))))))
+(define (interpret-try statement environment return break continue throw next)
+  (let* ((finally-block (make-finally-block (get-finally statement)))
+         (try-block (make-try-block (get-try statement)))
+         (new-return (lambda (v) (interpret-block finally-block environment return break continue throw (lambda (env2) (return v)))))
+         (new-break (lambda (env) (interpret-block finally-block env return break continue throw (lambda (env2) (break env2)))))
+         (new-continue (lambda (env) (interpret-block finally-block env return break continue throw (lambda (env2) (continue env2)))))
+         (new-throw (create-throw-catch-continuation (get-catch statement) environment return break continue throw next finally-block)))
+    (interpret-block try-block environment new-return new-break new-continue new-throw (lambda (env) (interpret-block finally-block env return break continue throw next)))))
 
 
 
 ; get function closure
-(define lookup-function-closure
-  (lambda (function enviroment)
-    (cond
-      ; if empty we couldn't find it
-      ((equal? enviroment '((()()))) 
-       (error "function not found"))
-      ; if its not in that first frame remove first frame and try again
-      ((not (exists-in-list? function (first-frame-variables enviroment))) 
-       (lookup-function-closure function (pop-frame enviroment)))
-      ; if not the first variable in the first frame then remove first and then try again
-      ((not (eq? function (car (first-frame-variables enviroment)))) 
-       (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (cdr (first-frame-values enviroment))) (pop-frame enviroment))))
-      ; if its the first variable in the first frame then return the value
-      ((eq? function (car (first-frame-variables enviroment)))
-       (car (first-frame-values enviroment)))
-      ; else something went wrong
-      (else
-       (error "lookup failed")
-       ))))
+(define (lookup-function-closure function enviroment)
+  (cond
+    ; if empty we couldn't find it
+    ((equal? enviroment '((()()))) (error "function not found"))
+    ; if its not in that first frame remove first frame and try again
+    ((not (exists-in-list? function (first-frame-variables enviroment))) 
+     (lookup-function-closure function (pop-frame enviroment)))
+    ; if not the first variable in the first frame then remove first and then try again
+    ((not (eq? function (car (first-frame-variables enviroment)))) 
+     (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (cdr (first-frame-values enviroment))) (pop-frame enviroment))))
+    ; if its the first variable in the first frame then return the value
+    ((eq? function (car (first-frame-variables enviroment))) (car (first-frame-values enviroment)))
+    ; else something went wrong
+    (else (error "lookup failed"))))
 
 ; helper methods so that I can reuse the interpret-block method on the try and finally blocks
-(define make-try-block
-  (lambda (try-statement)
-    (cons 'begin try-statement)))
+(define (make-try-block try-statement) (cons 'begin try-statement))
 
-(define make-finally-block
-  (lambda (finally-statement)
-    (cond
-      ((null? finally-statement) '(begin))
-      ((not (eq? (statement-type finally-statement) 'finally)) (myerror "Incorrectly formatted finally block"))
-      (else (cons 'begin (cadr finally-statement))))))
+(define (make-finally-block finally-statement)
+  (cond
+    ((null? finally-statement) '(begin))
+    ((not (eq? (statement-type finally-statement) 'finally)) (myerror "Incorrectly formatted finally block"))
+    (else (cons 'begin (cadr finally-statement)))))
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
-(define eval-expression
-  (lambda (expr enviroment throw)
-    (eval-expression-cps expr enviroment throw (lambda (v) v))))
+(define (eval-expression expr enviroment throw)
+  (eval-expression-cps expr enviroment throw (lambda (v) v)))
 
-(define eval-expression-cps
-  (lambda (expr environment throw return)
-    (cond
-      ((number? expr) (return expr))
-      ((eq? expr 'true) (return #t))
-      ((eq? expr 'false) (return #f))
-      ((eq? expr 'funcall) (return (interpret-funcall-value expr environment throw)))
-      ((not (list? expr)) (return (lookup expr environment)))
-      (else (return (eval-operator expr environment throw))))))
+(define (eval-expression-cps expr environment throw return)
+  (cond
+    ((number? expr) (return expr))
+    ((eq? expr 'true) (return #t))
+    ((eq? expr 'false) (return #f))
+    ((eq? expr 'funcall) (return (interpret-funcall-value expr environment throw)))
+    ((not (list? expr)) (return (lookup expr environment)))
+    (else (return (eval-operator expr environment throw)))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
 ; pass the result to eval-binary-op2 to evaluate the right operand.  This forces the operands to be evaluated in the proper order in case you choose
 ; to add side effects to the interpreter
-(define eval-operator
-  (lambda (expr enviroment throw)
-    (eval-operator-cps expr enviroment throw (lambda (v) v))))
+(define (eval-operator expr enviroment throw) (eval-operator-cps expr enviroment throw (lambda (v) v)))
 
-(define eval-operator-cps 
-  (lambda (expr environment throw return)
-    (cond
-      ((eq? '! (operator expr))
-       (eval-expression-cps (operand1 expr) environment throw
-                        (lambda (r-op1)
-                          (return (not r-op1)))))
-      ((and (eq? '- (operator expr)) (= 2 (length expr)))
-       (eval-expression-cps (operand1 expr) environment throw
-                        (lambda (r-op1)
-                          (return (- r-op1)))))
-      (else
-       (eval-expression-cps (operand1 expr) environment throw
-                        (lambda (r-op1)
-                          (return (eval-binary-op2 expr r-op1 environment throw))))))))
+(define (eval-operator-cps expr environment throw return)
+  (cond
+    ((eq? '! (operator expr))
+     (eval-expression-cps (operand1 expr) environment throw
+                      (lambda (r-op1) (return (not r-op1)))))
+    ((and (eq? '- (operator expr)) (= 2 (length expr)))
+     (eval-expression-cps (operand1 expr) environment throw
+                      (lambda (r-op1) (return (- r-op1)))))
+    (else (eval-expression-cps (operand1 expr) environment throw
+                      (lambda (r-op1) (return (eval-binary-op2 expr r-op1 environment throw)))))))
 
 ; Complete the evaluation of the binary operator by evaluating the second operand and performing the operation.
-(define eval-binary-op2
-  (lambda (expr op1value enviroment throw)
-    (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v))))
+(define (eval-binary-op2 expr op1value enviroment throw) (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v)))
 
-(define eval-binary-op2-cps
-  (lambda (expr op1value environment throw return)
-    (cond
-      ((eq? '+ (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (+ op1value r-op2)))))
-      ((eq? '- (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (- op1value r-op2)))))
-      ((eq? '* (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (* op1value r-op2)))))      
-      ((eq? '/ (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (quotient op1value r-op2)))))
-      ((eq? '% (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (remainder op1value r-op2)))))
-      ((eq? '== (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (isequal op1value r-op2)))))
-      ((eq? '!= (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (not(isequal op1value r-op2))))))
-      ((eq? '< (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (< op1value r-op2)))))
-      ((eq? '> (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (> op1value r-op2)))))
-      ((eq? '<= (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (<= op1value r-op2)))))
-      ((eq? '>= (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (>= op1value r-op2)))))
-      ((eq? '|| (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (or op1value r-op2)))))
-      ((eq? '&& (operator expr))
-       (eval-expression-cps (operand2 expr) environment throw
-                        (lambda (r-op2)
-                          (return (and op1value r-op2)))))
-      (else
-       (myerror "Unknown operator:" (operator expr))))))
+(define (eval-binary-op2-cps expr op1value environment throw return)
+  (cond
+    ((eq? '+ (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (+ op1value r-op2)))))
+    ((eq? '- (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (- op1value r-op2)))))
+    ((eq? '* (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (* op1value r-op2)))))      
+    ((eq? '/ (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (quotient op1value r-op2)))))
+    ((eq? '% (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (remainder op1value r-op2)))))
+    ((eq? '== (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (isequal op1value r-op2)))))
+    ((eq? '!= (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (not(isequal op1value r-op2))))))
+    ((eq? '< (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (< op1value r-op2)))))
+    ((eq? '> (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (> op1value r-op2)))))
+    ((eq? '<= (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (<= op1value r-op2)))))
+    ((eq? '>= (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (>= op1value r-op2)))))
+    ((eq? '|| (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (or op1value r-op2)))))
+    ((eq? '&& (operator expr))
+     (eval-expression-cps (operand2 expr) environment throw
+                      (lambda (r-op2) (return (and op1value r-op2)))))
+    (else (myerror "Unknown operator:" (operator expr)))))
 
 ; Determines if two values are equal.  We need a special test because there are both boolean and integer types.
-(define isequal
-  (lambda (val1 val2)
-    (if (and (number? val1) (number? val2))
-        (= val1 val2)
-        (eq? val1 val2))))
-
+(define (isequal val1 val2)
+  (if (and (number? val1) (number? val2))
+      (= val1 val2)
+      (eq? val1 val2)))
 
 ;-----------------
 ; HELPER FUNCTIONS
 ;-----------------
 
-(define (atom? x)
-  (not (pair? x)))
+(define (atom? x) (not (pair? x)))
 
 ; These helper functions define the operator and operands of a value expression
 (define operator car)
