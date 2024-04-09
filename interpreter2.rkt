@@ -343,13 +343,11 @@
     '(() ())))
 
 ; Creates a new environment for a function from the global variables and the parameters
-(define newenvironment
-  (lambda (global params)
-    (list (car params) (car global))))
+(define (newenvironment global params)
+  (list (car params) (car global)))
 
 ; Gets the global variables out of an environment
-(define (get-globals env)
-  (get-globals-cps env (lambda (v) v)))
+(define (get-globals env) (get-globals-cps env (lambda (v) v)))
 
 ; Helper to make this tail recursive
 (define (get-globals-cps env return)
@@ -389,14 +387,11 @@
     (else env)))
 
 ; add a frame onto the top of the environment
-(define push-frame
-  (lambda (environment)
-    (cons (emptyframe) environment)))
+(define (push-frame environment)
+  (cons (emptyframe) environment))
 
 ; remove a frame from the environment
-(define pop-frame
-  (lambda (environment)
-    (cdr environment)))
+(define (pop-frame environment) (cdr environment))
 
 ; some abstractions
 (define topframe car)
