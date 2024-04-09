@@ -47,13 +47,21 @@
 
 ; Calls a function in a value
 (define (interpret-funcall-value funcall environment throw)
+  (display (get-function-name funcall))
+  (newline)
+  (display (lookup-function-closure (get-function-name funcall) environment))
+  (newline)
+  (display environment)
+  (newline)
   ; Get the function parameters
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
          (closure (lookup-function-closure func_name environment))
+         ;(display closure)
+         ;(newline)
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
-         (env-creator (get-env-creator-from-closure)))
+         (env-creator (get-env-creator-from-closure closure)))
     
     ; Interpret the function
     (eval-expression fn_body (env-creator environment actual_params) throw)))
@@ -195,9 +203,12 @@
       ; if not the first variable in the first frame then remove first and then try again
       ((not (eq? function (car (first-frame-variables enviroment)))) 
        (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (cdr (first-frame-values enviroment))) (pop-frame enviroment))))
+      ((and (eq? function (car (first-frame-variables enviroment)))
+            (list? (caar (first-frame-values enviroment))))
+       (car (first-frame-values enviroment)))
       ; if its the first variable in the first frame then return the value
       ((eq? function (car (first-frame-variables enviroment)))
-       (car (first-frame-values enviroment)))
+       (first-frame-values enviroment))
       ; else something went wrong
       (else
        (error "lookup failed")
@@ -222,12 +233,14 @@
 
 (define eval-expression-cps
   (lambda (expr environment throw return)
+    (display expr)
+    (newline)
     (cond
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
-      ((eq? expr 'funcall) (return (interpret-funcall-value expr environment throw)))
       ((not (list? expr)) (return (lookup expr environment)))
+      ((eq? (car expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
       (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
@@ -521,6 +534,8 @@
 ; Return the value bound to a variable in the frame
 (define lookup-in-frame
   (lambda (var frame)
+    (display frame)
+    (newline)
     (cond
       ((not (exists-in-list? var (variables frame))) (myerror "error: undefined variable" var))
       (else (language->scheme (unbox (get-value (indexof var (variables frame)) (store frame))))))))

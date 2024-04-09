@@ -7,7 +7,7 @@
 (check-equal? (interpret "tests/p3_t1.bad") 10)
 (check-equal? (interpret "tests/p3_t2.bad") 14)
 (check-equal? (interpret "tests/p3_t3.bad") 45)
-;(check-equal? (interpret "tests/p3_t4.bad") 55) ; Fail
+(check-equal? (interpret "tests/p3_t4.bad") 55) ; Fail
 ;(check-equal? (interpret "tests/p3_t5.bad") 1) ; Fail
 ;(check-equal? (interpret "tests/p3_t6.bad") 115) ; Fail
 ;(check-equal? (interpret "tests/p3_t7.bad") true) ; Fail
