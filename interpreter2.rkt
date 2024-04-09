@@ -429,20 +429,17 @@
       (myerror "error: undefined variable" var)))
 
 ; Get the location of a name in a list of names
-(define indexof
-  (lambda (var l)
-    (cond
-      ((null? l) 0)  ; should not happen
-      ((eq? var (car l)) 0)
-      (else (+ 1 (indexof var (cdr l)))))))
+(define (indexof var l)
+  (cond
+    ((null? l) 0)  ; should not happen
+    ((eq? var (car l)) 0)
+    (else (+ 1 (indexof var (cdr l))))))
 
 ; Get the value stored at a given index in the list
-(define get-value
-  (lambda (n l)
-    ;(display l)
-    (cond
-      ((zero? n) (car l))
-      (else (get-value (- n 1) (cdr l))))))
+(define (get-value n l)
+  (if (zero? n)
+      (car l)
+      (get-value (- n 1) (cdr l))))
 
 ; Adds a new variable/value binding pair into the environment.  Gives an error if the variable (or a function) already exists in this frame.
 (define insert
