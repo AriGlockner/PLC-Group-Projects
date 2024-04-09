@@ -22,7 +22,7 @@
 (define (interpret-statement-list statement-list environment return break continue throw next)
   (if (null? statement-list)
       (next environment)
-      (interpret-statement (car statement-list) environment return break continue throw (lambda (env) (interpret-statement-list (cdr statement-list) env return break continue throw next)))))
+      (interpret-statement (operator statement-list) environment return break continue throw (lambda (env) (interpret-statement-list (remove statement-list) env return break continue throw next)))))
 
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
@@ -111,7 +111,7 @@
 
 ; Interprets a block.  The break, continue, throw and "next statement" continuations must be adjusted to pop the environment
 (define (interpret-block statement environment return break continue throw next)
-  (interpret-statement-list (cdr statement)
+  (interpret-statement-list (remove statement)
                                        (push-frame environment)
                                        return
                                        (lambda (env) (break (pop-frame env)))
@@ -163,10 +163,10 @@
     ((not (exists-in-list? function (first-frame-variables enviroment))) 
      (lookup-function-closure function (pop-frame enviroment)))
     ; if not the first variable in the first frame then remove first and then try again
-    ((not (eq? function (car (first-frame-variables enviroment)))) 
-     (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (cdr (first-frame-values enviroment))) (pop-frame enviroment))))
+    ((not (eq? function (operator (first-frame-variables enviroment)))) 
+     (lookup-function-closure function (cons (cons (remove (first-frame-variables enviroment)) (remove (first-frame-values enviroment))) (pop-frame enviroment))))
     ; if its the first variable in the first frame then return the value
-    ((eq? function (car (first-frame-variables enviroment))) (car (first-frame-values enviroment)))
+    ((eq? function (operator (first-frame-variables enviroment))) (operator (first-frame-values enviroment)))
     ; else something went wrong
     (else (error "lookup failed"))))
 
@@ -177,7 +177,7 @@
   (cond
     ((null? finally-statement) '(begin))
     ((not (eq? (statement-type finally-statement) 'finally)) (myerror "Incorrectly formatted finally block"))
-    (else (cons 'begin (cadr finally-statement)))))
+    (else (cons 'begin (operand1 finally-statement)))))
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
 (define (eval-expression expr enviroment throw)
@@ -272,11 +272,10 @@
 (define operand2 caddr)
 (define operand3 cadddr)
 
-(define (exists-operand2? statement)
-  (not (null? (cddr statement))))
+(define remove cdr)
 
-(define (exists-operand3? statement)
-  (not (null? (cdddr statement))))
+(define (exists-operand2? statement) (not (null? (cddr statement))))
+(define (exists-operand3? statement) (not (null? (cdddr statement))))
 
 ; these helper functions define the parts of the various statement types
 (define statement-type operator)
@@ -296,12 +295,12 @@
 (define get-finally operand3)
 (define get-function-name operand1)
 
-(define get-formal-params caddr)
-(define get-function-body cadddr)
+(define get-formal-params operand2)
+(define get-function-body operand3)
 
 (define get-actual-params cddr)
 
-(define (catch-var catch-statement) (car (operand1 catch-statement)))
+(define (catch-var catch-statement) (operator (operand1 catch-statement)))
 
 ;------------------------
 ; Closure Functions
@@ -313,20 +312,18 @@
     (function-environment current_env actual_param_list formal_param_list)))
 
 ; Makes the closure
-(define (make_closure formal_params body state)
-  (list formal_params body (create_closure_function formal_params)))
+(define (make_closure formal_params body state) (list formal_params body (create_closure_function formal_params)))
 
 ; takes in the function closure, just returns the list of formal parameters
-(define (get-form-params-from-closure function_closure)
-  (car function_closure))
+(define (get-form-params-from-closure function_closure) (operator function_closure))
 
 ; takes in the closure and returns just the body
 (define (get-fn-body-from-closure function_closure)
-  (cadr function_closure))
+  (operand1 function_closure))
 
 ; takes in the closure and returns the function that creates a new environment
 (define (get-env-creator-from-closure function_closure)
-  (caddr function_closure))
+  (operand2 function_closure))
 
 ;----------------------------
 ; Environment/State Functions
@@ -339,7 +336,7 @@
 (define (emptyframe) '(() ()))
 
 ; Creates a new environment for a function from the global variables and the parameters
-(define (newenvironment global params) (list (car params) (car global)))
+(define (newenvironment global params) (list (operator params) (operator global)))
 
 ; Gets the global variables out of an environment
 (define (get-globals env) (get-globals-cps env (lambda (v) v)))
@@ -348,12 +345,12 @@
 (define (get-globals-cps env return)
   (cond
     ((null? env) (return '((() ()))))
-    ((null? (cdr env)) (return env))
-    (else (return (get-globals-cps (cdr env) (lambda (v) v))))))
+    ((null? (remove env)) (return env))
+    (else (return (get-globals-cps (remove env) (lambda (v) v))))))
 
 ; Binds the parameters to the values (or value of the expressions) that they are passed in with.
 (define (bind-actual-formal env actual-param-list formal-param-list)
-  (car (bind-actual-formal-helper env actual-param-list formal-param-list '((() ())) (lambda (v) v) (lambda (v) v))))
+  (operator (bind-actual-formal-helper env actual-param-list formal-param-list '((() ())) (lambda (v) v) (lambda (v) v))))
 
 ; Preforms the bindings for the bind-actual-formal function
 (define (bind-actual-formal-helper env actual-param-list formal-param-list binding return throw)
@@ -361,8 +358,8 @@
       (if (null? formal-param-list)
           (return binding)
           (error "The formal and actual parameters must match"))
-      (return (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
-                                             (insert (car formal-param-list) (eval-expression (car actual-param-list) env throw) binding) return throw))))
+      (return (bind-actual-formal-helper env (remove actual-param-list) (remove formal-param-list)
+                                             (insert (operator formal-param-list) (eval-expression (operator actual-param-list) env throw) binding) return throw))))
 
 ; Create the environment for the function
 (define (function-environment current-env actual-param-list formal-param-list)
@@ -385,11 +382,11 @@
 (define (push-frame environment) (cons (emptyframe) environment))
 
 ; remove a frame from the environment
-(define (pop-frame environment) (cdr environment))
+(define (pop-frame environment) (remove environment))
 
 ; some abstractions
-(define topframe car)
-(define remainingframes cdr)
+(define topframe operator)
+(define remainingframes remove)
 
 ; does a variable exist in the environment?
 (define (exists? var environment)
@@ -402,8 +399,8 @@
 (define (exists-in-list? var l)
   (cond
     ((null? l) #f)
-    ((eq? var (car l)) #t)
-    (else (exists-in-list? var (cdr l)))))
+    ((eq? var (operator l)) #t)
+    (else (exists-in-list? var (remove l)))))
 
 ; Looks up a value in the environment.  If the value is a boolean, it converts our languages boolean type to a Scheme boolean type
 (define (lookup var environment) (lookup-variable var environment))
@@ -420,7 +417,7 @@
   (cond
     ((null? environment) (myerror "error: undefined variable" var))
     ((exists-in-list? var (variables (topframe environment))) (lookup-in-frame var (topframe environment)))
-    (else (lookup-in-env var (cdr environment)))))
+    (else (lookup-in-env var (remove environment)))))
 
 ; Return the value bound to a variable in the frame
 (define (lookup-in-frame var frame)
@@ -432,26 +429,26 @@
 (define (indexof var l)
   (cond
     ((null? l) 0)  ; should not happen
-    ((eq? var (car l)) 0)
-    (else (+ 1 (indexof var (cdr l))))))
+    ((eq? var (operator l)) 0)
+    (else (+ 1 (indexof var (remove l))))))
 
 ; Get the value stored at a given index in the list
 (define (get-value n l)
   (if (zero? n)
-      (car l)
-      (get-value (- n 1) (cdr l))))
+      (operator l)
+      (get-value (- n 1) (remove l))))
 
 ; Adds a new variable/value binding pair into the environment.  Gives an error if the variable (or a function) already exists in this frame.
 (define (insert var val environment)
-  (if (exists-in-list? var (variables (car environment)))
+  (if (exists-in-list? var (variables (operator environment)))
       (myerror "error: variable is being re-declared:" var)
-      (cons (add-to-frame var val (car environment)) (cdr environment))))
+      (cons (add-to-frame var val (operator environment)) (remove environment))))
 
 ; Adds a new function/(params) (body) pair into the environment. Gives an error if the function (or a variable) already exists in this frame.
 (define (insert-function name formal-params func-body environment)
-  (if (exists-in-list? name (variables (car environment)))
+  (if (exists-in-list? name (variables (operator environment)))
       (myerror "error: variable is being re-declared:" name)
-      (cons (add-func-to-frame name (make_closure formal-params func-body environment) (car environment)) (cdr environment))))
+      (cons (add-func-to-frame name (make_closure formal-params func-body environment) (operator environment)) (remove environment))))
 
 ; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
 (define (update var val environment)
@@ -470,7 +467,7 @@
 
 ; Changes the binding of a variable in the environment to a new value
 (define (update-existing var val environment)
-  (if (exists-in-list? var (variables (car environment)))
+  (if (exists-in-list? var (variables (operator environment)))
       (cons (update-in-frame var val (topframe environment)) (remainingframes environment))
       (cons (topframe environment) (update-existing var val (remainingframes environment)))))
 
@@ -480,15 +477,15 @@
 
 ; Changes a variable binding by placing the new value in the appropriate place in the store
 (define (update-in-frame-store var val varlist vallist)
-  (if (eq? var (car varlist))
-      (begin (set-box! (car vallist) (scheme->language val)) vallist)
-      (cons (car vallist) (update-in-frame-store var val (cdr varlist) (cdr vallist)))))
+  (if (eq? var (operator varlist))
+      (begin (set-box! (operator vallist) (scheme->language val)) vallist)
+      (cons (operator vallist) (update-in-frame-store var val (remove varlist) (remove vallist)))))
 
 ; Returns the list of variables from a frame
-(define (variables frame) (car frame))
+(define (variables frame) (operator frame))
 
 ; Returns the store from a frame
-(define (store frame) (cadr frame))
+(define (store frame) (operand1 frame))
 
 ; returns list of variables from the first frame
 (define (first-frame-variables env) (caar env))
@@ -517,7 +514,7 @@
   (letrec ((makestr (lambda (str vals)
                       (if (null? vals)
                           str
-                          (makestr (string-append str (string-append " " (symbol->string (car vals)))) (cdr vals))))))
+                          (makestr (string-append str (string-append " " (symbol->string (operator vals)))) (remove vals))))))
     (error-break (display (string-append (string-append str (makestr "" vals)) "\n")))))
 
 
@@ -545,14 +542,14 @@
 ; Without parameters
 (define add-function (interpret-function '(function add () (return 1)) (initenvironment) (lambda (v) v)))
 (check-equal? (caaar add-function) 'add)
-(check-equal? (car (caadar add-function)) '())
-(check-equal? (car (cdr (caadar add-function))) '(return 1))
+(check-equal? (operator (caadar add-function)) '())
+(check-equal? (operator (remove (caadar add-function))) '(return 1))
 
 ; With parameters
 (define add-function2 (interpret-function '(function add (a b) (return (+ a b))) (initenvironment) (lambda (v) v)))
 (check-equal? (caaar add-function2) 'add)
-(check-equal? (car (caadar add-function2)) '(a b))
-(check-equal? (car (cdr (caadar add-function2))) '(return (+ a b)))
+(check-equal? (operator (caadar add-function2)) '(a b))
+(check-equal? (operator (remove (caadar add-function2))) '(return (+ a b)))
 
 ;
 ; (lambda (funcall environment throw)
