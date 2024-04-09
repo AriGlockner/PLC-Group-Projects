@@ -58,55 +58,37 @@
 ; Calls a function in a state
 (define (interpret-funcall-state funcall environment return break continue throw next)
   ; Get the function parameters
-  ;(display environment)
-  ;(display "\n")
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
          (closure (lookup-function-closure func_name environment))
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
          (env-creator (get-env-creator-from-closure closure)))
-    ;(display func_name)
-;    (display "\nclosure: ")
- ;   (display closure)
-         ;(display "\n")
-         ;(display env-creator)
-         ;(display "\n")
-  ;  (display "\nformal params: ")
-   ; (display form_params)
-;    (display "\nactual_params: ")
-;    (display actual_params)
     
     ; Interpret the function
-;    (display "\nenvironment: ")
-;    (display environment)
     (next (interpret-statement-list fn_body (env-creator environment actual_params) return break continue throw next))))
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
-; (function swap (& x & y) ((var temp x) (= x y) (= y temp)))
-; (a (x y) ((return (+ x y)))
-; (function main () ((var x 10) (var y 15) (return (funcall gcd x y))))
 (define interpret-function
   (lambda (statement environment next)
     (if (eq? 'main (get-function-name statement))
         ; Run main function
-        (interpret-funcall-state '(funcall main) (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment) (lambda (v) v) (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+        (interpret-funcall-state '(funcall main)
+                                 (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment)
+                                 (lambda (v) v) (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                                (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))
         ; Add function to the environment
-        (next (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment))
-        )))
+        (next (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment)))))
 
 ; Calls the return continuation with the given expression value
-(define interpret-return
-  (lambda (statement environment return throw)
-    (return (eval-expression (get-expr statement) environment throw))))
+(define (interpret-return statement environment return throw)
+  (return (eval-expression (get-expr statement) environment throw)))
 
 ; Adds a new variable binding to the environment.  There may be an assignment with the variable
-(define interpret-declare
-  (lambda (statement environment next throw)
-    (if (exists-declare-value? statement)
-        (next (insert (get-declare-var statement) (eval-expression (get-declare-value statement) environment throw) environment))
-        (next (insert (get-declare-var statement) 'novalue environment)))))
+(define (interpret-declare statement environment next throw)
+  (if (exists-declare-value? statement)
+      (next (insert (get-declare-var statement) (eval-expression (get-declare-value statement) environment throw) environment))
+      (next (insert (get-declare-var statement) 'novalue environment))))
 
 ; Updates the environment to add a new binding for a variable
 (define interpret-assign
