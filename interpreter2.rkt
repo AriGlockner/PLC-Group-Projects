@@ -12,38 +12,35 @@
 (provide (all-defined-out))
 
 ; The main function.  Calls parser to get the parse tree and interprets it with a new environment.  Sets default continuations for return, break, continue, throw, and "next statement"
-(define interpret
-  (lambda (file)
-    (scheme->language
-     (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
-                               (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
-                               (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env)))))
+(define (interpret file)
+  (scheme->language
+   (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
+                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
 ; interprets a list of statements.  The state/environment from each statement is used for the next ones.
-(define interpret-statement-list
-  (lambda (statement-list environment return break continue throw next)
-    (if (null? statement-list)
-        (next environment)
-        (interpret-statement (car statement-list) environment return break continue throw (lambda (env) (interpret-statement-list (cdr statement-list) env return break continue throw next))))))
+(define (interpret-statement-list statement-list environment return break continue throw next)
+  (if (null? statement-list)
+      (next environment)
+      (interpret-statement (car statement-list) environment return break continue throw (lambda (env) (interpret-statement-list (cdr statement-list) env return break continue throw next)))))
 
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
-(define interpret-statement
-  (lambda (statement environment return break continue throw next)
-    (cond
-      ((eq? 'return (statement-type statement)) (interpret-return statement environment return throw))
-      ((eq? 'var (statement-type statement)) (interpret-declare statement environment next throw))
-      ((eq? '= (statement-type statement)) (interpret-assign statement environment next throw))
-      ((eq? 'if (statement-type statement)) (interpret-if statement environment return break continue throw next))
-      ((eq? 'while (statement-type statement)) (interpret-while statement environment return throw next))
-      ((eq? 'continue (statement-type statement)) (continue environment))
-      ((eq? 'break (statement-type statement)) (break environment))
-      ((eq? 'begin (statement-type statement)) (interpret-block statement environment return break continue throw next))
-      ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
-      ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
-      ((eq? 'function (statement-type statement)) (interpret-function statement environment next))
-      ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment return break continue throw next))
-      (else (myerror "Unknown statement:" (statement-type statement))))))  
+(define (interpret-statement statement environment return break continue throw next)
+  (cond
+    ((eq? 'return (statement-type statement)) (interpret-return statement environment return throw))
+    ((eq? 'var (statement-type statement)) (interpret-declare statement environment next throw))
+    ((eq? '= (statement-type statement)) (interpret-assign statement environment next throw))
+    ((eq? 'if (statement-type statement)) (interpret-if statement environment return break continue throw next))
+    ((eq? 'while (statement-type statement)) (interpret-while statement environment return throw next))
+    ((eq? 'continue (statement-type statement)) (continue environment))
+    ((eq? 'break (statement-type statement)) (break environment))
+    ((eq? 'begin (statement-type statement)) (interpret-block statement environment return break continue throw next))
+    ((eq? 'throw (statement-type statement)) (interpret-throw statement environment throw))
+    ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
+    ((eq? 'function (statement-type statement)) (interpret-function statement environment next))
+    ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment return break continue throw next))
+    (else (myerror "Unknown statement:" (statement-type statement)))))
 
 ; Calls a function in a value
 (define (interpret-funcall-value funcall environment throw)
