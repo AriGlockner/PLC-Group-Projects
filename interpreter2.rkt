@@ -210,6 +210,10 @@
 
 (define eval-expression-cps
   (lambda (expr environment throw return)
+    (display "\nexpr: ")
+    (display expr)
+    (display "\nenv in eval-expression-cps:")
+    (display environment)
     (cond
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
@@ -474,6 +478,8 @@
  ; (display environment)
 
   ; Actual code
+  (display "\nenv: ")
+  (display environment)
   (cond
     ((null? environment) (myerror "error: undefined variable" var))
     ((exists-in-list? var (variables (topframe environment)))
@@ -585,7 +591,7 @@
 (call-with-current-continuation (lambda (k) (set! error-break k)))
 
 (define (myerror str . vals)
-  (error str))
+  (error str vals))
   
 ;  (letrec ((makestr (lambda (str vals)
  ;                     (if (null? vals)
