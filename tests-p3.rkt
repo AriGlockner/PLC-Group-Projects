@@ -24,6 +24,7 @@
 ;(check-equal? (interpret "tests/p3_t18.bad") 125) ; Fail
 ;(check-equal? (interpret "tests/p3_t19.bad") 100) ; Fail
 ;(check-equal? (interpret "tests/p3_t20.bad") 2000400) ; Fail
+
 ;(check-equal? (interpret "tests/p3_t21.bad") 2) ; Fail
 ;(check-equal? (interpret "tests/p3_t22.bad") 1) ; Fail
 ;(check-equal? (interpret "tests/p3_t23.bad") 1) ; Fail
