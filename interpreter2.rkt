@@ -65,7 +65,6 @@
 
 ; Calls a function in a state
 (define (interpret-funcall-state funcall environment return break continue throw next)
-  ;(display "\nINTERPRETING FUNCALL STATE\n")
   ; Get the function parameters
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
@@ -80,7 +79,7 @@
        (interpret-statement-list
         fn_body
         (env-creator environment actual_params)
-        (lambda (ret) (next environment))
+        return
         (lambda (env) (myerror "Break used outside of loop"))
         (lambda (env) (myerror "Continue used outside of loop"))
         throw
@@ -100,8 +99,6 @@
 
 ; Calls the return continuation with the given expression value
 (define (interpret-return statement environment return throw)
- ; (display "\nenv in interpret-return: ")
-  ;(display environment)
   (return (eval-expression (get-expr statement) environment throw)))
 
 ; Adds a new variable binding to the environment.  There may be an assignment with the variable
@@ -213,8 +210,6 @@
 
 (define eval-expression-cps
   (lambda (expr environment throw return)
-  ;  (display "\nenv in eval-expression-cps: ")
-   ; (display environment)
     (cond
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
@@ -243,6 +238,10 @@
 (define (eval-binary-op2 expr op1value enviroment throw) (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v)))
 
 (define (eval-binary-op2-cps expr op1value environment throw return)
+;  (display "\nexpr: ")
+ ; (display expr)
+  ;(display "\nenv: ")
+  ;(display environment)
   (cond
     ((eq? '+ (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
@@ -456,16 +455,10 @@
 
 ; A helper function that does the lookup.  Returns an error if the variable does not have a legal value
 (define (lookup-variable var environment)
- ; (display "\nenv in lookup-variable: ")
-  ;(display environment)
   (let ((value (lookup-in-env var environment)))
     (if (eq? 'novalue value)
         (myerror "error: variable without an assigned value:" var)
         value)))
-
-;(define (disp msg)
- ; (display msg)
-  ;(display "\n"))
 
 ; Return the value bound to a variable in the environment
 (define (lookup-in-env var environment)
@@ -478,8 +471,6 @@
 ;    ((null? environment) (disp "null"))
 ;    ((exists-in-list? var (variables (topframe environment))) (disp "exists"))
 ;    (else (disp "not in current frame")))
-;  (display "\n")
-;  (display "\nenv in lookup-in-env: ")
  ; (display environment)
 
   ; Actual code
