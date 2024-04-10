@@ -50,10 +50,17 @@
          (closure (lookup-function-closure func_name environment))
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
-         (env-creator (get-env-creator-from-closure)))
+         (env-creator (get-env-creator-from-closure closure)))
     
     ; Interpret the function
-    (eval-expression fn_body (env-creator environment actual_params) throw)))
+    (interpret-statement-list
+     fn_body
+     (env-creator environment actual_params)
+     (lambda (v) v)
+     (lambda (env) (myerror "Break used outside of loop"))
+     (lambda (env) (myerror "Continue used outside of loop"))
+     throw
+     (lambda (env) env))))
 
 ; Calls a function in a state
 (define (interpret-funcall-state funcall environment return break continue throw next)
@@ -155,20 +162,29 @@
 
 
 ; get function closure
-(define (lookup-function-closure function enviroment)
-  (cond
-    ; if empty we couldn't find it
-    ((equal? enviroment '((()()))) (error "function not found"))
-    ; if its not in that first frame remove first frame and try again
-    ((not (exists-in-list? function (first-frame-variables enviroment))) 
-     (lookup-function-closure function (pop-frame enviroment)))
-    ; if not the first variable in the first frame then remove first and then try again
-    ((not (eq? function (operator (first-frame-variables enviroment)))) 
-     (lookup-function-closure function (cons (cons (remove (first-frame-variables enviroment)) (remove (first-frame-values enviroment))) (pop-frame enviroment))))
-    ; if its the first variable in the first frame then return the value
-    ((eq? function (operator (first-frame-variables enviroment))) (operator (first-frame-values enviroment)))
-    ; else something went wrong
-    (else (error "lookup failed"))))
+(define lookup-function-closure
+  (lambda (function enviroment)
+    (cond
+      ; if empty we couldn't find it
+      ((equal? enviroment '((()()))) 
+       (error "function not found"))
+      ; if its not in that first frame remove first frame and try again
+      ((not (exists-in-list? function (first-frame-variables enviroment))) 
+       (lookup-function-closure function (pop-frame enviroment)))
+      ; if not the first variable in the first frame then remove first and then try again
+      ((not (eq? function (car (first-frame-variables enviroment)))) 
+       (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (cdr (first-frame-values enviroment))) (pop-frame enviroment))))
+      ; sometimes it's not the only thing left in the list, so take the car
+      ((and (eq? function (car (first-frame-variables enviroment)))
+            (list? (caar (first-frame-values enviroment))))
+       (car (first-frame-values enviroment)))
+      ; if its the first variable in the first frame then return the value
+      ((eq? function (car (first-frame-variables enviroment)))
+       (first-frame-values enviroment))
+      ; else something went wrong
+      (else
+       (error "lookup failed")
+       ))))
 
 ; helper methods so that I can reuse the interpret-block method on the try and finally blocks
 (define (make-try-block try-statement) (cons 'begin try-statement))
@@ -183,14 +199,15 @@
 (define (eval-expression expr enviroment throw)
   (eval-expression-cps expr enviroment throw (lambda (v) v)))
 
-(define (eval-expression-cps expr environment throw return)
-  (cond
-    ((number? expr) (return expr))
-    ((eq? expr 'true) (return #t))
-    ((eq? expr 'false) (return #f))
-    ((eq? expr 'funcall) (return (interpret-funcall-value expr environment throw)))
-    ((not (list? expr)) (return (lookup expr environment)))
-    (else (return (eval-operator expr environment throw)))))
+(define eval-expression-cps
+  (lambda (expr environment throw return)
+    (cond
+      ((number? expr) (return expr))
+      ((eq? expr 'true) (return #t))
+      ((eq? expr 'false) (return #f))
+      ((not (list? expr)) (return (lookup expr environment)))
+      ((eq? (car expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
+      (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
 ; pass the result to eval-binary-op2 to evaluate the right operand.  This forces the operands to be evaluated in the proper order in case you choose
@@ -433,10 +450,11 @@
     (else (+ 1 (indexof var (remove l))))))
 
 ; Get the value stored at a given index in the list
-(define (get-value n l)
-  (if (zero? n)
-      (operator l)
-      (get-value (- n 1) (remove l))))
+(define get-value
+  (lambda (n l)
+    (cond
+      ((zero? n) (car l))
+      (else (get-value (- n 1) (cdr l))))))
 
 ; Adds a new variable/value binding pair into the environment.  Gives an error if the variable (or a function) already exists in this frame.
 (define (insert var val environment)
