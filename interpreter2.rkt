@@ -487,7 +487,7 @@
     ((null? environment) (myerror "error: undefined variable" var))
     ((exists-in-list? var (variables (topframe environment)))
      (lookup-in-frame var (topframe environment)))
-    (else (lookup-in-env var (remove environment)))))
+    (else (lookup-in-env var (cdr environment)))))
 
 ; Return the value bound to a variable in the frame
 (define (lookup-in-frame var frame)  

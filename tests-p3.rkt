@@ -18,8 +18,8 @@
 (check-exn
    exn:fail? (lambda () (interpret "tests/p3_t12.bad")))
 (check-equal? (interpret "tests/p3_t13.bad") 90) 
-;(check-equal? (interpret "tests/p3_t14.bad") 69) ; Fail
-;(check-equal? (interpret "tests/p3_t15.bad") 87) ; Fail
+(check-equal? (interpret "tests/p3_t14.bad") 69) ; Fail
+(check-equal? (interpret "tests/p3_t15.bad") 87) ; Fail
 ;(check-equal? (interpret "tests/p3_t16.bad") 64) ; Fail
 (check-exn
    exn:fail? (lambda () (interpret "tests/p3_t17.bad")))
