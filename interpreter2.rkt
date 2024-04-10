@@ -54,16 +54,18 @@
     
     ; Interpret the function
     (interpret-statement-list
-     fn_body
-     (env-creator environment actual_params)
-     (lambda (v) v)
-     (lambda (env) (myerror "Break used outside of loop"))
-     (lambda (env) (myerror "Continue used outside of loop"))
-     throw
-     (lambda (env) env))))
+     fn_body ; statement list
+     (env-creator environment actual_params) ; environment
+     (lambda (v) v) ; return 
+     (lambda (env) (myerror "Break used outside of loop")) ; break
+     (lambda (env) (myerror "Continue used outside of loop")) ; continue
+     throw ; throw
+     (lambda (env) env) ; next
+     )))
 
 ; Calls a function in a state
 (define (interpret-funcall-state funcall environment return break continue throw next)
+  ;(display "\nINTERPRETING FUNCALL STATE\n")
   ; Get the function parameters
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
@@ -73,22 +75,33 @@
          (env-creator (get-env-creator-from-closure closure)))
     
     ; Interpret the function
-    (next (interpret-statement-list fn_body (env-creator environment actual_params) return break continue throw next))))
+    (next
+     (begin
+       (interpret-statement-list
+        fn_body
+        (env-creator environment actual_params)
+        (lambda (ret) (next environment))
+        (lambda (env) (myerror "Break used outside of loop"))
+        (lambda (env) (myerror "Continue used outside of loop"))
+        throw
+        next)
+       environment))))
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
 (define interpret-function
   (lambda (statement environment next)
     (if (eq? 'main (get-function-name statement))
         ; Run main function
-        (interpret-funcall-state '(funcall main)
+        (interpret-funcall-value '(funcall main)
                                  (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment)
-                                 (lambda (v) v) (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
-                               (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))
+                                 (lambda (v env) (myerror "Uncaught exception thrown")))
         ; Add function to the environment
         (next (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment)))))
 
 ; Calls the return continuation with the given expression value
 (define (interpret-return statement environment return throw)
+ ; (display "\nenv in interpret-return: ")
+  ;(display environment)
   (return (eval-expression (get-expr statement) environment throw)))
 
 ; Adds a new variable binding to the environment.  There may be an assignment with the variable
@@ -200,6 +213,8 @@
 
 (define eval-expression-cps
   (lambda (expr environment throw return)
+  ;  (display "\nenv in eval-expression-cps: ")
+   ; (display environment)
     (cond
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
@@ -423,14 +438,16 @@
 
 ; A helper function that does the lookup.  Returns an error if the variable does not have a legal value
 (define (lookup-variable var environment)
+ ; (display "\nenv in lookup-variable: ")
+  ;(display environment)
   (let ((value (lookup-in-env var environment)))
     (if (eq? 'novalue value)
         (myerror "error: variable without an assigned value:" var)
         value)))
 
-(define (disp msg)
-  (display msg)
-  (display "\n"))
+;(define (disp msg)
+ ; (display msg)
+  ;(display "\n"))
 
 ; Return the value bound to a variable in the environment
 (define (lookup-in-env var environment)
@@ -444,6 +461,8 @@
 ;    ((exists-in-list? var (variables (topframe environment))) (disp "exists"))
 ;    (else (disp "not in current frame")))
 ;  (display "\n")
+;  (display "\nenv in lookup-in-env: ")
+ ; (display environment)
 
   ; Actual code
   (cond
@@ -630,18 +649,18 @@
 
 ; test
 ;(define e '(((main setX x) ((() ((funcall setX 2) (return x)) 'p1) ((a) ((= x a)) 'p2) #&2)))) ; leave commented
-(define e '(((main setX x) ((() ((funcall setX 2) (return x)) 'p1) ((a) ((= x a)) 'p2) #&2))))
+;(define e '(((main setX x) ((() ((funcall setX 2) (return x)) 'p1) ((a) ((= x a)) 'p2) #&2))))
 ;(disp e) ; displays the environment
 ;(disp (topframe e)) ; displays the frame
 ;(disp (variables (topframe e))) ; displays the variables names that are in the frame
-(disp (lookup-in-frame 'x (topframe e))) ; Lookup the value of the variable
+;(disp (lookup-in-frame 'x (topframe e))) ; Lookup the value of the variable
 ;(disp "\n")
 ;(check-equal? (lookup-in-env 'x e) 2)
 
-(disp "\nStarting the interpret:\n")
+;(disp "\nStarting the interpret:\n")
 ;(check-equal? (interpret "tests/foo.bad") 2)
 ;(check-equal? (interpret "tests/bar.bad") 5)
 ;(check-equal? (interpret "tests/p3_t11.bad") 35)
 ;(interpret "tests/p3_t11.bad")
 ;(interpret "tests/foo.bad")
-(interpret "tests/bar.bad")
+;(interpret "tests/bar.bad")
