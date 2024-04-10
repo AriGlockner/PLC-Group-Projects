@@ -1,0 +1,13 @@
+
+var y = 3;
+
+function main() {
+  var x = 10;
+ function blah() {
+  x = 16;
+}
+var b = 9;
+blah();
+return x;
+
+}

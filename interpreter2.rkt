@@ -338,12 +338,13 @@
 ;------------------------
 
 ; Create Closure Function
-(define (create_closure_function formal_param_list)
+(define (create_closure_function formal_param_list static_env)
   (lambda (current_env actual_param_list)
-    (function-environment current_env actual_param_list formal_param_list)))
+    (function-environment static_env current_env actual_param_list formal_param_list)))
 
 ; Makes the closure
-(define (make_closure formal_params body state) (list formal_params body (create_closure_function formal_params)))
+(define (make_closure formal_params body static-env)
+  (list formal_params body (create_closure_function formal_params static-env)))
 
 ; takes in the function closure, just returns the list of formal parameters
 (define (get-form-params-from-closure function_closure) (operator function_closure))
@@ -393,9 +394,26 @@
                                              (insert (operator formal-param-list) (eval-expression (operator actual-param-list) env throw) binding) return throw))))
 
 ; Create the environment for the function
-(define (function-environment current-env actual-param-list formal-param-list)
-  (cons (bind-actual-formal current-env actual-param-list formal-param-list)
-  (get-globals current-env)))
+(define (function-environment static-env current-env actual-param-list formal-param-list)
+  (let ([env
+         (cons
+    (bind-actual-formal current-env actual-param-list formal-param-list)
+    (append
+     (kill-global-static static-env)
+     (get-globals current-env)
+     ))
+         ])
+  ;(display env)
+  env
+    )
+  )
+
+
+; kill global static
+(define kill-global-static
+  (lambda (static)
+    (remove-last static)
+    ))
 
 ; creates a binding of the 2 lists
 (define (bind-parameters env actual formal return)
@@ -467,8 +485,8 @@
   ; Actual code
   (cond
     ((null? environment) (myerror "error: undefined variable" var))
-;    ((atom? environment) environment)
-    ((exists-in-list? var (variables (topframe environment))) (lookup-in-frame var (operator environment)))
+    ((exists-in-list? var (variables (topframe environment)))
+     (lookup-in-frame var (topframe environment)))
     (else (lookup-in-env var (cdr environment)))))
 
 ; Return the value bound to a variable in the frame
@@ -505,10 +523,16 @@
 
 ; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
 (define (update var val environment)
-  (if (exists? var environment)
-      (update-existing var val environment)
-      (myerror "error: variable used but not defined:" var)))
-
+  (cond
+    ((exists? var environment) (update-existing var val environment))
+    
+    (else (
+           (myerror "error: variable used but not defined:" var))
+          )))
+         
+        
+   ; (((() ()) ((b blah x () ()) (#&9 (() ((= x 16)) #<procedure:...ts/interpreter2.rkt:327:2>) #&10 (main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) #<procedure:...ts/interpreter2.rkt:327:2>) #&3)))))
+ 
 ; Add a new variable/value pair to the frame.
 (define (add-to-frame var val frame)
   (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame))))
@@ -545,6 +569,12 @@
 
 ; returns list of values from the first frame
 (define (first-frame-values env) (cadar env))
+
+; remove last elment of list
+(define (remove-last lst)
+  (if (null? (cdr lst)) '()
+      (cons (car lst) (remove-last (cdr lst)))))
+
 
 ; Functions to convert the Scheme #t and #f to our languages true and false, and back.
 (define (language->scheme v)
@@ -646,21 +676,3 @@
 ; create-closure -> env-creator-function
 ;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
 
-
-; test
-;(define e '(((main setX x) ((() ((funcall setX 2) (return x)) 'p1) ((a) ((= x a)) 'p2) #&2)))) ; leave commented
-;(define e '(((main setX x) ((() ((funcall setX 2) (return x)) 'p1) ((a) ((= x a)) 'p2) #&2))))
-;(disp e) ; displays the environment
-;(disp (topframe e)) ; displays the frame
-;(disp (variables (topframe e))) ; displays the variables names that are in the frame
-;(disp (lookup-in-frame 'x (topframe e))) ; Lookup the value of the variable
-;(disp "\n")
-;(check-equal? (lookup-in-env 'x e) 2)
-
-;(disp "\nStarting the interpret:\n")
-;(check-equal? (interpret "tests/foo.bad") 2)
-;(check-equal? (interpret "tests/bar.bad") 5)
-;(check-equal? (interpret "tests/p3_t11.bad") 35)
-;(interpret "tests/p3_t11.bad")
-;(interpret "tests/foo.bad")
-;(interpret "tests/bar.bad")
