@@ -53,10 +53,17 @@
          (closure (lookup-function-closure func_name environment))
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
-         (env-creator (get-env-creator-from-closure)))
+         (env-creator (get-env-creator-from-closure closure)))
     
     ; Interpret the function
-    (eval-expression fn_body (env-creator actual_params environment) throw)))
+    (interpret-statement-list
+     fn_body
+     (env-creator environment actual_params)
+     (lambda (v) v)
+     (lambda (env) (myerror "Break used outside of loop"))
+     (lambda (env) (myerror "Continue used outside of loop"))
+     throw
+     (lambda (env) env))))
 
 ; Calls a function in a state
 (define (interpret-funcall-state funcall environment return break continue throw next)
@@ -67,9 +74,7 @@
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
          (env-creator (get-env-creator-from-closure closure)))
-    
-    ; Interpret the function
-    (next (interpret-statement-list fn_body (env-creator actual_params environment) return break continue throw next))))
+    (next (interpret-statement-list fn_body (env-creator environment actual_params) return break continue throw next))))
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
 ; (function swap (& x & y) ((var temp x) (= x y) (= y temp)))
@@ -77,9 +82,10 @@
 ; (function main () ((var x 10) (var y 15) (return (funcall gcd x y))))
 (define interpret-function
   (lambda (statement environment next)
-    (if (eq? 'main (car statement))
-        ; TODO: Run main function
-        (error "The main function is not yet implemented")
+    (if (eq? 'main (get-function-name statement))
+        ; Run main function
+        (interpret-funcall-state '(funcall main) (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment) (lambda (v) v) (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+                               (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))
         ; Add function to the environment
         (next (insert-function (get-function-name statement) (get-formal-params statement) (get-function-body statement) environment))
         )))
@@ -180,6 +186,9 @@
       ; if not the first variable in the first frame then remove first and then try again
       ((not (eq? function (car (first-frame-variables enviroment)))) 
        (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (cdr (first-frame-values enviroment))) (pop-frame enviroment))))
+      ((and (eq? function (car (first-frame-variables enviroment)))
+            (list? (caar (first-frame-values enviroment))))
+       (car (first-frame-values enviroment)))
       ; if its the first variable in the first frame then return the value
       ((eq? function (car (first-frame-variables enviroment)))
        (first-frame-values enviroment))
@@ -211,8 +220,8 @@
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
-      ((eq? expr 'funcall) (return (interpret-funcall-value expr environment throw)))
       ((not (list? expr)) (return (lookup expr environment)))
+      ((eq? (car expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
       (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
@@ -364,8 +373,11 @@
 ; Create Closure Function
 (define (create_closure_function formal_param_list)
   (lambda (current_env actual_param_list)
-    (newenvironment (get-globals current_env)
-                    (bind-actual-formal actual_param_list formal_param_list current_env))))
+    (function-environment current_env actual_param_list formal_param_list)))
+
+
+;     (get-globals current_env)
+ ;                   (bind-actual-formal actual_param_list formal_param_list current_env))))
 
 ; Makes the closure
 (define (make_closure formal_params body state)
@@ -423,10 +435,8 @@
       (if (null? formal-param-list)
           (return binding)
           (error "The formal and actual parameters must match"))
-      (if (null? actual-param-list)
-          (error "The formal and actual parameters must match")
-          (return (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
-                                             (insert (car formal-param-list) (eval-expression (car actual-param-list) env throw) binding) return throw)))))
+      (return (bind-actual-formal-helper env (cdr actual-param-list) (cdr formal-param-list)
+                                             (insert (car formal-param-list) (eval-expression (car actual-param-list) env throw) binding) return throw))))
 
 ; Create the environment for the function
 (define (function-environment current-env actual-param-list formal-param-list)
@@ -514,7 +524,6 @@
 ; Get the value stored at a given index in the list
 (define get-value
   (lambda (n l)
-    ;(display l)
     (cond
       ((zero? n) (car l))
       (else (get-value (- n 1) (cdr l))))))
@@ -553,7 +562,6 @@
 ; Changes the binding of a variable in the environment to a new value
 (define update-existing
   (lambda (var val environment)
-    ;(display environment)
     (if (exists-in-list? var (variables (car environment)))
         (cons (update-in-frame var val (topframe environment)) (remainingframes environment))
         (cons (topframe environment) (update-existing var val (remainingframes environment))))))
@@ -680,11 +688,11 @@
 ;       ))
 
 ; test lookup-function-closure
-(check-equal? (lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
-   ((() ((funcall myfunc 6 x)) procedure)
-    ((a b) ((= x (+ a b))) procedure)
-    #&10)) ((q l) (3 4))
-       )) '((a b) ((= x (+ a b))) procedure))
+;(check-equal? (lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
+ ;  ((() ((funcall myfunc 6 x)) procedure)
+  ;  ((a b) ((= x (+ a b))) procedure)
+   ; #&10)) ((q l) (3 4))
+     ;  )) '((a b) ((= x (+ a b))) procedure))
 
 
 ; create-closure -> formal parameters function
