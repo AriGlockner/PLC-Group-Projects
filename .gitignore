@@ -9,3 +9,5 @@ compiled/drracket/*
 *.dep
 *.zo
 *.rkt~
+.DS_Store
+.DS_Store
