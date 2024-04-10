@@ -24,9 +24,9 @@
 ;(check-equal? (interpret "tests/p3_t18.bad") 125) ; Fail
 ;(check-equal? (interpret "tests/p3_t19.bad") 100) ; Fail
 ;(check-equal? (interpret "tests/p3_t20.bad") 2000400) ; Fail
-;(check-equal? (interpret "tests/p3_t21.bad") 2) ; Fail
-;(check-equal? (interpret "tests/p3_t22.bad") 1) ; Fail
-;(check-equal? (interpret "tests/p3_t23.bad") 1) ; Fail
-;(check-equal? (interpret "tests/p3_t24.bad") 3) ; Fail
-;(check-equal? (interpret "tests/p3_t25.bad") 3) ; Fail
-(check-equal? (interpret "tests/p3_t26.bad") 1) ; Fail -> display the state to see if we have a closure here
+;(check-equal? (interpret "tests/p3_t27.bad") 2) ; Fail
+;(check-equal? (interpret "tests/p3_t28.bad") 1) ; Fail
+;(check-equal? (interpret "tests/p3_t29.bad") 1) ; Fail
+;(check-equal? (interpret "tests/p3_t30.bad") 3) ; Fail
+;(check-equal? (interpret "tests/p3_t31.bad") 3) ; Fail
+(check-equal? (interpret "tests/p3_t32.bad") 1) ; Fail -> display the state to see if we have a closure here
