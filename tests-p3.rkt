@@ -33,3 +33,6 @@
 ;(check-equal? (interpret "tests/p3_t24.bad") 3) ; Fail
 (check-equal? (interpret "tests/p3_t25.bad") 3)
 (check-equal? (interpret "tests/p3_t26.bad") 1)
+
+(check-equal? (interpret "tests/foo.bad") 2)
+(interpret "tests/foo.bad")

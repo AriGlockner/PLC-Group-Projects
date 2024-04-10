@@ -22,7 +22,7 @@
 (define (interpret-statement-list statement-list environment return break continue throw next)
   (if (null? statement-list)
       (next environment)
-      (interpret-statement (operator statement-list) environment return break continue throw (lambda (env) (interpret-statement-list (remove statement-list) env return break continue throw next)))))
+      (interpret-statement (operator statement-list) environment return break continue throw (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next)))))
 
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
@@ -118,7 +118,7 @@
 
 ; Interprets a block.  The break, continue, throw and "next statement" continuations must be adjusted to pop the environment
 (define (interpret-block statement environment return break continue throw next)
-  (interpret-statement-list (remove statement)
+  (interpret-statement-list (remainingframes statement)
                                        (push-frame environment)
                                        return
                                        (lambda (env) (break (pop-frame env)))
@@ -288,7 +288,7 @@
 (define operand2 caddr)
 (define operand3 cadddr)
 
-(define remove cdr)
+;(define remove1 cdr)
 
 (define (exists-operand2? statement) (not (null? (cddr statement))))
 (define (exists-operand3? statement) (not (null? (cdddr statement))))
@@ -361,8 +361,8 @@
 (define (get-globals-cps env return)
   (cond
     ((null? env) (return '((() ()))))
-    ((null? (remove env)) (return env))
-    (else (return (get-globals-cps (remove env) (lambda (v) v))))))
+    ((null? (remainingframes env)) (return env))
+    (else (return (get-globals-cps (remainingframes env) (lambda (v) v))))))
 
 ; Binds the parameters to the values (or value of the expressions) that they are passed in with.
 (define (bind-actual-formal env actual-param-list formal-param-list)
@@ -374,7 +374,7 @@
       (if (null? formal-param-list)
           (return binding)
           (error "The formal and actual parameters must match"))
-      (return (bind-actual-formal-helper env (remove actual-param-list) (remove formal-param-list)
+      (return (bind-actual-formal-helper env (remainingframes actual-param-list) (remainingframes formal-param-list)
                                              (insert (operator formal-param-list) (eval-expression (operator actual-param-list) env throw) binding) return throw))))
 
 ; Create the environment for the function
@@ -398,11 +398,11 @@
 (define (push-frame environment) (cons (emptyframe) environment))
 
 ; remove a frame from the environment
-(define (pop-frame environment) (remove environment))
+(define (pop-frame environment) (remainingframes environment))
 
 ; some abstractions
 (define topframe operator)
-(define remainingframes remove)
+(define remainingframes cdr)
 
 ; does a variable exist in the environment?
 (define (exists? var environment)
@@ -412,11 +412,11 @@
     (else (exists? var (remainingframes environment)))))
 
 ; does a variable exist in a list?
-(define (exists-in-list? var l)
+(define (exists-in-list? var l)  
   (cond
     ((null? l) #f)
     ((eq? var (operator l)) #t)
-    (else (exists-in-list? var (remove l)))))
+    (else (exists-in-list? var (remainingframes l)))))
 
 ; Looks up a value in the environment.  If the value is a boolean, it converts our languages boolean type to a Scheme boolean type
 (define (lookup var environment) (lookup-variable var environment))
@@ -428,15 +428,32 @@
         (myerror "error: variable without an assigned value:" var)
         value)))
 
+(define (disp msg)
+  (display msg)
+  (display "\n"))
+
 ; Return the value bound to a variable in the environment
 (define (lookup-in-env var environment)
+  ; Debugging stuff
+;  (disp "Looking up:")
+;  (disp var)
+;  (disp environment)
+;  (display "Option chosen: ")
+;  (cond
+;    ((null? environment) (disp "null"))
+;    ((exists-in-list? var (variables (topframe environment))) (disp "exists"))
+;    (else (disp "not in current frame")))
+;  (display "\n")
+
+  ; Actual code
   (cond
     ((null? environment) (myerror "error: undefined variable" var))
-    ((exists-in-list? var (variables (topframe environment))) (lookup-in-frame var (topframe environment)))
-    (else (lookup-in-env var (remove environment)))))
+;    ((atom? environment) environment)
+    ((exists-in-list? var (variables (topframe environment))) (lookup-in-frame var (operator environment)))
+    (else (lookup-in-env var (cdr environment)))))
 
 ; Return the value bound to a variable in the frame
-(define (lookup-in-frame var frame)
+(define (lookup-in-frame var frame)  
   (if (exists-in-list? var (variables frame))
       (language->scheme (unbox (get-value (indexof var (variables frame)) (store frame))))
       (myerror "error: undefined variable" var)))
@@ -446,7 +463,7 @@
   (cond
     ((null? l) 0)  ; should not happen
     ((eq? var (operator l)) 0)
-    (else (+ 1 (indexof var (remove l))))))
+    (else (+ 1 (indexof var (remainingframes l))))))
 
 ; Get the value stored at a given index in the list
 (define get-value
@@ -459,13 +476,13 @@
 (define (insert var val environment)
   (if (exists-in-list? var (variables (operator environment)))
       (myerror "error: variable is being re-declared:" var)
-      (cons (add-to-frame var val (operator environment)) (remove environment))))
+      (cons (add-to-frame var val (operator environment)) (remainingframes environment))))
 
 ; Adds a new function/(params) (body) pair into the environment. Gives an error if the function (or a variable) already exists in this frame.
 (define (insert-function name formal-params func-body environment)
   (if (exists-in-list? name (variables (operator environment)))
       (myerror "error: variable is being re-declared:" name)
-      (cons (add-func-to-frame name (make_closure formal-params func-body environment) (operator environment)) (remove environment))))
+      (cons (add-func-to-frame name (make_closure formal-params func-body environment) (operator environment)) (remainingframes environment))))
 
 ; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
 (define (update var val environment)
@@ -496,7 +513,7 @@
 (define (update-in-frame-store var val varlist vallist)
   (if (eq? var (operator varlist))
       (begin (set-box! (operator vallist) (scheme->language val)) vallist)
-      (cons (operator vallist) (update-in-frame-store var val (remove varlist) (remove vallist)))))
+      (cons (operator vallist) (update-in-frame-store var val (remainingframes varlist) (remainingframes vallist)))))
 
 ; Returns the list of variables from a frame
 (define (variables frame) (operator frame))
@@ -533,7 +550,7 @@
 ;  (letrec ((makestr (lambda (str vals)
  ;                     (if (null? vals)
   ;                        str
-   ;                       (makestr (string-append str (string-append " " (symbol->string (operator vals)))) (remove vals))))))
+   ;                       (makestr (string-append str (string-append " " (symbol->string (operator vals)))) (remainingframes vals))))))
     ;(error-break (display (string-append (string-append str (makestr "" vals)) "\n")))))
 
 
@@ -611,3 +628,20 @@
 ;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
 
 
+; test
+;(define e '(((main setX x) ((() ((funcall setX 2) (return x)) 'p1) ((a) ((= x a)) 'p2) #&2)))) ; leave commented
+(define e '(((main setX x) ((() ((funcall setX 2) (return x)) 'p1) ((a) ((= x a)) 'p2) #&2))))
+;(disp e) ; displays the environment
+;(disp (topframe e)) ; displays the frame
+;(disp (variables (topframe e))) ; displays the variables names that are in the frame
+(disp (lookup-in-frame 'x (topframe e))) ; Lookup the value of the variable
+;(disp "\n")
+;(check-equal? (lookup-in-env 'x e) 2)
+
+(disp "\nStarting the interpret:\n")
+;(check-equal? (interpret "tests/foo.bad") 2)
+;(check-equal? (interpret "tests/bar.bad") 5)
+;(check-equal? (interpret "tests/p3_t11.bad") 35)
+;(interpret "tests/p3_t11.bad")
+;(interpret "tests/foo.bad")
+(interpret "tests/bar.bad")
