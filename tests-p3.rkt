@@ -13,7 +13,7 @@
 (check-equal? (interpret "tests/p3_t7.bad") 'true)
 (check-equal? (interpret "tests/p3_t8.bad") 20) 
 (check-equal? (interpret "tests/p3_t9.bad") 24)
-(check-equal? (interpret "tests/p3_t10.bad") 2) ; Fail
+(check-equal? (interpret "tests/p3_t10.bad") 2)
 (check-equal? (interpret "tests/p3_t11.bad") 35)
 (check-exn
    exn:fail? (lambda () (interpret "tests/p3_t12.bad")))
