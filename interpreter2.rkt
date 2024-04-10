@@ -53,36 +53,27 @@
          (closure (lookup-function-closure func_name environment))
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
-         (env-creator (get-env-creator-from-closure)))
+         (env-creator (get-env-creator-from-closure closure)))
     
     ; Interpret the function
-    (eval-expression fn_body (env-creator environment actual_params) throw)))
+    (interpret-statement-list
+     fn_body
+     (env-creator environment actual_params)
+     (lambda (v) v)
+     (lambda (env) (myerror "Break used outside of loop"))
+     (lambda (env) (myerror "Continue used outside of loop"))
+     throw
+     (lambda (env) env))))
 
 ; Calls a function in a state
 (define (interpret-funcall-state funcall environment return break continue throw next)
   ; Get the function parameters
-  ;(display environment)
-  ;(display "\n")
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
          (closure (lookup-function-closure func_name environment))
          (form_params (get-form-params-from-closure closure))
          (fn_body (get-fn-body-from-closure closure))
          (env-creator (get-env-creator-from-closure closure)))
-    ;(display func_name)
-;    (display "\nclosure: ")
- ;   (display closure)
-         ;(display "\n")
-         ;(display env-creator)
-         ;(display "\n")
-  ;  (display "\nformal params: ")
-   ; (display form_params)
-;    (display "\nactual_params: ")
-;    (display actual_params)
-    
-    ; Interpret the function
-;    (display "\nenvironment: ")
-;    (display environment)
     (next (interpret-statement-list fn_body (env-creator environment actual_params) return break continue throw next))))
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
@@ -195,9 +186,12 @@
       ; if not the first variable in the first frame then remove first and then try again
       ((not (eq? function (car (first-frame-variables enviroment)))) 
        (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (cdr (first-frame-values enviroment))) (pop-frame enviroment))))
+      ((and (eq? function (car (first-frame-variables enviroment)))
+            (list? (caar (first-frame-values enviroment))))
+       (car (first-frame-values enviroment)))
       ; if its the first variable in the first frame then return the value
       ((eq? function (car (first-frame-variables enviroment)))
-       (car (first-frame-values enviroment)))
+       (first-frame-values enviroment))
       ; else something went wrong
       (else
        (error "lookup failed")
@@ -226,8 +220,8 @@
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
-      ((eq? expr 'funcall) (return (interpret-funcall-value expr environment throw)))
       ((not (list? expr)) (return (lookup expr environment)))
+      ((eq? (car expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
       (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
@@ -379,12 +373,6 @@
 ; Create Closure Function
 (define (create_closure_function formal_param_list)
   (lambda (current_env actual_param_list)
-    ;(display "\nget-globals current_env: ")
-    ;(display (get-globals current_env))
-;    (display "\nactual in create_closure_function: ")
- ;   (display actual_param_list)
-  ;  (display "\ncurrent_env in create_closure_function: ")
-   ; (display current_env)
     (function-environment current_env actual_param_list formal_param_list)))
 
 
@@ -536,7 +524,6 @@
 ; Get the value stored at a given index in the list
 (define get-value
   (lambda (n l)
-    ;(display l)
     (cond
       ((zero? n) (car l))
       (else (get-value (- n 1) (cdr l))))))
@@ -575,7 +562,6 @@
 ; Changes the binding of a variable in the environment to a new value
 (define update-existing
   (lambda (var val environment)
-    ;(display environment)
     (if (exists-in-list? var (variables (car environment)))
         (cons (update-in-frame var val (topframe environment)) (remainingframes environment))
         (cons (topframe environment) (update-existing var val (remainingframes environment))))))
