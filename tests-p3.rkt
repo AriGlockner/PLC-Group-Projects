@@ -39,3 +39,9 @@
 
 
 (interpret "tests/ethan.bad")
+
+
+;((() ()) ((x) (#&10)) ((main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) #<procedure:...ts/interpreter2.rkt:327:2>) #&3)))
+
+
+;(((x) (#&16)) ((main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) #<procedure:...ts/interpreter2.rkt:327:2>) #&3)))

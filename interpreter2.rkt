@@ -382,7 +382,12 @@
 (define (function-environment static-env current-env actual-param-list formal-param-list)
 
 
- ; (display  (kill-global-static static-env))
+  ;(display static-env)
+;  (display "\nkill:")
+; (display  (kill-global-static static-env))
+;  (display "\n")
+
+ ; (display "\n\n+++")
 
 
 ;  (display "\n::")
@@ -392,13 +397,48 @@
 ;    (kill-global-static static-env)))
 
 
-   (cons
-    (cons (bind-actual-formal current-env actual-param-list formal-param-list)
-          (get-globals current-env))
-    (kill-global-static static-env))
+;((() ()) (((x) (#&10)) ()) ((main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) #<procedure:...ts/interpreter2.rkt:327:2>) #&3)))
+
+
+  (display "yo mama\n")
+  ;(display (exists? 'x
+  ;                  '((() ()) ((x) (#&10)) () ((main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) procedure) #&3)))
+  ;         ))
+
+  (display (exists? 'x
+                    '((() ()) ((x) (#&10)) ((main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) pro) #&3)))
+           ))
+
+
+  (display "\ndo do do\n")
+(display (kill-global-static static-env))
+
+  (display "\nno no no\n")
+
+
+  (let ([env
+         (cons
+    (bind-actual-formal current-env actual-param-list formal-param-list)
+    (append
+     (kill-global-static static-env)
+     (get-globals current-env)
+     ))
+         ])
+
+    
+  (display env)
+
+    
+  env
+
+    )
+  
+    
   
  ; (cons (bind-actual-formal current-env actual-param-list formal-param-list) (get-globals current-env))
 
+;((() ()) ((main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) #<procedure:...ts/interpreter2.rkt:327:2>) #&3)))((() ()) ((x) (#&10)) ((main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) #<procedure:...ts/interpreter2.rkt:327:2>) #&3)))
+  
   )
 
 
@@ -458,7 +498,16 @@
 (define (lookup-in-env var environment)
   (cond
     ((null? environment) (myerror "error: undefined variable" var))
-    ((exists-in-list? var (variables (topframe environment))) (lookup-in-frame var (topframe environment)))
+    ((exists-in-list? var (variables (topframe environment)))
+
+
+     
+     (display "\n\nbadfasdf\n\n")
+
+     (display environment)
+     (display var)
+     
+     (lookup-in-frame var (topframe environment)))
     (else (lookup-in-env var (remove environment)))))
 
 ; Return the value bound to a variable in the frame
@@ -499,16 +548,17 @@
     ((exists? var environment) (update-existing var val environment))
     
     (else (
-           ;(display var)
+          ; (display var)
            (display environment)
-           (display (exists? 'blah environment))
+          ; (display (exists? var environment))
+          ; (display (lookup 'b environment))
            
 
            (myerror "error: variable used but not defined:" var))
           )))
          
         
-    (((() ()) ((b blah x () ()) (#&9 (() ((= x 16)) #<procedure:...ts/interpreter2.rkt:327:2>) #&10 (main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) #<procedure:...ts/interpreter2.rkt:327:2>) #&3)))))
+   ; (((() ()) ((b blah x () ()) (#&9 (() ((= x 16)) #<procedure:...ts/interpreter2.rkt:327:2>) #&10 (main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) #<procedure:...ts/interpreter2.rkt:327:2>) #&3)))))
  
 ; Add a new variable/value pair to the frame.
 (define (add-to-frame var val frame)
