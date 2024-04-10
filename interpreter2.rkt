@@ -47,12 +47,6 @@
 
 ; Calls a function in a value
 (define (interpret-funcall-value funcall environment throw)
-  ;(display "fn closure: ")
-  ;(display (lookup-function-closure (get-function-name funcall) environment))
-  ;(newline)
-  ;(display "env: ")
-  ;(display environment)
-  ;(newline)
   ; Get the function parameters
   (let* ((func_name (get-function-name funcall))
          (actual_params (get-actual-params funcall))
