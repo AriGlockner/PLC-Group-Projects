@@ -1,0 +1,10 @@
+var x = 0;
+
+function setx(a) {
+  x = a;
+}
+
+function main() {
+  setx(2);
+  return x;
+}
