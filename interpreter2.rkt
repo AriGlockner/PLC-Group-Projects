@@ -216,9 +216,6 @@
 
 (define eval-expression-cps
   (lambda (expr environment throw return)
-    ;(display "expr: ")
-    ;(display expr)
-    ;(newline)
     (cond
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
