@@ -1,0 +1,9 @@
+function sum(a, b) {
+  return + a b;
+}
+
+function main() {
+  var a = 1;
+  var b = 2;
+  return sum(a, b);
+}

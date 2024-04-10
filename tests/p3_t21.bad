@@ -1,0 +1,13 @@
+var a = 1;
+var b = 2;
+
+function swap() {
+  var temp = a;
+  a = b;
+  b = temp;
+}
+
+function main() {
+  swap();
+  return a;
+}
