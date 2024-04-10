@@ -29,4 +29,4 @@
 ;(check-equal? (interpret "tests/p3_t23.bad") 1) ; Fail
 ;(check-equal? (interpret "tests/p3_t24.bad") 3) ; Fail
 ;(check-equal? (interpret "tests/p3_t25.bad") 3) ; Fail
-(check-equal? (interpret "tests/p3_t26.bad") 1) ; Fail -> display the state to see if we have a closure here
+(check-equal? (interpret "tests/p3_t26.bad") 1)
