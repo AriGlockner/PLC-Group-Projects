@@ -528,11 +528,13 @@
 (call-with-current-continuation (lambda (k) (set! error-break k)))
 
 (define (myerror str . vals)
-  (letrec ((makestr (lambda (str vals)
-                      (if (null? vals)
-                          str
-                          (makestr (string-append str (string-append " " (symbol->string (operator vals)))) (remove vals))))))
-    (error-break (display (string-append (string-append str (makestr "" vals)) "\n")))))
+  (error str))
+  
+;  (letrec ((makestr (lambda (str vals)
+ ;                     (if (null? vals)
+  ;                        str
+   ;                       (makestr (string-append str (string-append " " (symbol->string (operator vals)))) (remove vals))))))
+    ;(error-break (display (string-append (string-append str (makestr "" vals)) "\n")))))
 
 
 (display "Start Debugging:\n")
