@@ -36,4 +36,4 @@
 (check-equal? (interpret "tests/p3_t28.bad") 'false)
 ;(check-equal? (interpret "tests/p3_t29.bad") 'true) ; Fail
 (check-equal? (interpret "tests/p3_t30.bad") 'true)
-(check-equal? (interpret "tests/p3_t31.bad") 'true)
+(check-equal? (interpret "tests/p3_t31.bad") "error: a out of scope")
