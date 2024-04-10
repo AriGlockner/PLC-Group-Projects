@@ -323,9 +323,9 @@
 ;------------------------
 
 ; Create Closure Function
-(define (create_closure_function formal_param_list)
+(define (create_closure_function formal_param_list static_env)
   (lambda (current_env actual_param_list)
-    (function-environment current_env actual_param_list formal_param_list)))
+    (function-environment static_env current_env actual_param_list formal_param_list)))
 
 ; Makes the closure
 (define (make_closure formal_params body state) (list formal_params body (create_closure_function formal_params)))
@@ -378,7 +378,7 @@
                                              (insert (operator formal-param-list) (eval-expression (operator actual-param-list) env throw) binding) return throw))))
 
 ; Create the environment for the function
-(define (function-environment current-env actual-param-list formal-param-list)
+(define (function-environment static-env current-env actual-param-list formal-param-list)
   (cons (bind-actual-formal current-env actual-param-list formal-param-list)
   (get-globals current-env)))
 
