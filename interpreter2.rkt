@@ -328,7 +328,8 @@
     (function-environment static_env current_env actual_param_list formal_param_list)))
 
 ; Makes the closure
-(define (make_closure formal_params body state) (list formal_params body (create_closure_function formal_params)))
+(define (make_closure formal_params body static-env)
+  (list formal_params body (create_closure_function formal_params static-env)))
 
 ; takes in the function closure, just returns the list of formal parameters
 (define (get-form-params-from-closure function_closure) (operator function_closure))
@@ -379,8 +380,33 @@
 
 ; Create the environment for the function
 (define (function-environment static-env current-env actual-param-list formal-param-list)
-  (cons (bind-actual-formal current-env actual-param-list formal-param-list)
-  (get-globals current-env)))
+
+
+ ; (display  (kill-global-static static-env))
+
+
+;  (display "\n::")
+; (display (cons
+;    (cons (bind-actual-formal current-env actual-param-list formal-param-list)
+;          (get-globals current-env))
+;    (kill-global-static static-env)))
+
+
+   (cons
+    (cons (bind-actual-formal current-env actual-param-list formal-param-list)
+          (get-globals current-env))
+    (kill-global-static static-env))
+  
+ ; (cons (bind-actual-formal current-env actual-param-list formal-param-list) (get-globals current-env))
+
+  )
+
+
+; kill global static
+(define kill-global-static
+  (lambda (static)
+    (remove-last static)
+    ))
 
 ; creates a binding of the 2 lists
 (define (bind-parameters env actual formal return)
@@ -469,10 +495,21 @@
 
 ; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
 (define (update var val environment)
-  (if (exists? var environment)
-      (update-existing var val environment)
-      (myerror "error: variable used but not defined:" var)))
+  (cond
+    ((exists? var environment) (update-existing var val environment))
+    
+    (else (
+           ;(display var)
+           (display environment)
+           (display (exists? 'blah environment))
+           
 
+           (myerror "error: variable used but not defined:" var))
+          )))
+         
+        
+    (((() ()) ((b blah x () ()) (#&9 (() ((= x 16)) #<procedure:...ts/interpreter2.rkt:327:2>) #&10 (main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) #<procedure:...ts/interpreter2.rkt:327:2>) #&3)))))
+ 
 ; Add a new variable/value pair to the frame.
 (define (add-to-frame var val frame)
   (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame))))
@@ -509,6 +546,12 @@
 
 ; returns list of values from the first frame
 (define (first-frame-values env) (cadar env))
+
+; remove last elment of list
+(define (remove-last lst)
+  (if (null? (cdr lst)) '()
+      (cons (car lst) (remove-last (cdr lst)))))
+
 
 ; Functions to convert the Scheme #t and #f to our languages true and false, and back.
 (define (language->scheme v)
@@ -610,4 +653,5 @@
 ; create-closure -> env-creator-function
 ;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
 
-
+;(kill-global-static '(((x)(10))((y)(3))))
+;(kill-global-static '(((x)(1))((y)(2))((z)(3))))
