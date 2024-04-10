@@ -30,3 +30,9 @@
 ;(check-equal? (interpret "tests/p3_t24.bad") 3) ; Fail
 (check-equal? (interpret "tests/p3_t25.bad") 3)
 (check-equal? (interpret "tests/p3_t26.bad") 1)
+
+;(check-equal? (interpret "tests/p3_t27.bad") 'true) ; Fail
+(check-equal? (interpret "tests/p3_t28.bad") 'false)
+;(check-equal? (interpret "tests/p3_t29.bad") 'true) ; Fail
+(check-equal? (interpret "tests/p3_t30.bad") 'true)
+(check-equal? (interpret "tests/p3_t31.bad") 'true)

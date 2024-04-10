@@ -1,0 +1,10 @@
+function test(b) {
+  b = !b;
+  a = !a;
+}
+
+function main() {
+  var a = true;
+  test(a);
+  return a;
+}

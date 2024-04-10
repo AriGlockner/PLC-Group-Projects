@@ -1,0 +1,9 @@
+function test(a) {
+  a = !a;
+}
+
+function main() {
+  var a = true;
+  test(a);
+  return a;
+}
