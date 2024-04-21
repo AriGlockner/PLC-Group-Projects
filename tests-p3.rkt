@@ -1,6 +1,6 @@
 #lang racket
 
-(require "interpreter2.rkt")
+(require "interpreter.rkt")
 (require rackunit)
 
 ; part 3 canvas integration tests
@@ -13,13 +13,13 @@
 (check-equal? (interpret "tests/p3_t7.bad") 'true)
 (check-equal? (interpret "tests/p3_t8.bad") 20) 
 (check-equal? (interpret "tests/p3_t9.bad") 24)
-;(check-equal? (interpret "tests/p3_t10.bad") 2) ; Fail
+(check-equal? (interpret "tests/p3_t10.bad") 2)
 (check-equal? (interpret "tests/p3_t11.bad") 35)
 (check-exn
    exn:fail? (lambda () (interpret "tests/p3_t12.bad")))
 (check-equal? (interpret "tests/p3_t13.bad") 90) 
-(check-equal? (interpret "tests/p3_t14.bad") 69) ; Fail
-(check-equal? (interpret "tests/p3_t15.bad") 87) ; Fail
+(check-equal? (interpret "tests/p3_t14.bad") 69)
+(check-equal? (interpret "tests/p3_t15.bad") 87)
 ;(check-equal? (interpret "tests/p3_t16.bad") 64) ; Fail
 (check-exn
    exn:fail? (lambda () (interpret "tests/p3_t17.bad")))
