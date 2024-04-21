@@ -1,0 +1,22 @@
+#lang racket
+
+(require "interpreter.rkt")
+(require rackunit)
+
+;(check-equal? (interpret "tests/p4t1.bad") 15)
+;(check-equal? (interpret "tests/p4t2.bad") 12)
+;(check-equal? (interpret "tests/p4t3.bad") 125)
+;(check-equal? (interpret "tests/p4t4.bad") 36)
+;(check-equal? (interpret "tests/p4t5.bad") 54)
+;(check-equal? (interpret "tests/p4t6.bad") 110)
+;(check-equal? (interpret "tests/p4t7.bad") 26)
+;(check-equal? (interpret "tests/p4t8.bad") 117)
+;(check-equal? (interpret "tests/p4t9.bad") 32)
+;(check-equal? (interpret "tests/p4t10.bad") 15)
+;(check-equal? (interpret "tests/p4t11.bad") 123456)
+;(check-equal? (interpret "tests/p4t12.bad") 5285)
+;(check-equal? (interpret "tests/p4t13.bad") -716)
+;(check-equal? (interpret "tests/p4t21.bad") 530)
+;(check-equal? (interpret "tests/p4t22.bad") 66)
+;(check-equal? (interpret "tests/p4t23.bad") 1026)
+;(check-equal? (interpret "tests/p4t24.bad") 2045)
