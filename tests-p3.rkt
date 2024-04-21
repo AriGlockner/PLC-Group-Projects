@@ -1,6 +1,6 @@
 #lang racket
 
-(require "interpreter2.rkt")
+(require "interpreter.rkt")
 (require rackunit)
 
 ; part 3 canvas integration tests
