@@ -1,6 +1,6 @@
 #lang racket
 
-(require "interpreter2.rkt")
+(require "interpreter.rkt")
 (require rackunit)
 
 (define state '(((x y a) (5 12 true))))
