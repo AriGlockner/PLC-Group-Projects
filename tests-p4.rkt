@@ -16,3 +16,7 @@
 ;(check-equal? (interpret "tests/p4_t11.bad" "List") 123456)
 ;(check-equal? (interpret "tests/p4_t12.bad" "List") 5285)
 ;(check-equal? (interpret "tests/p4_t13.bad" "C") -716)
+
+;(check-equal? (interpret "test/p5_t100.bad" "A") 5)
+;(check-equal? (interpret "test/p5_t101.bad" "A") 'true)
+;(check-equal? (interpret "test/p5_t102.bad" "A") 5)
