@@ -46,9 +46,10 @@
     ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment return break continue throw next))
     (else (myerror "Unknown statement:" (statement-type statement)))))
 
-;
+; Gets the fields in a class
 (define (get-field-info body) (get-field-info-cps body '(() ()) (lambda (v) v)))
 
+; Helper function that gets the field info
 (define (get-field-info-cps body state return)
   (cond
     ((null? body) (return state))
@@ -681,5 +682,5 @@
 ; create-closure -> env-creator-function
 ;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
 
-(get-field-info '((var x (* 3 6))))
-(get-field-info '((var x (5)) (var y (10)) (static function main () ())))
+(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
+(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
