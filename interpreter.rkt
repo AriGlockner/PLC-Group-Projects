@@ -46,6 +46,16 @@
     ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment return break continue throw next))
     (else (myerror "Unknown statement:" (statement-type statement)))))
 
+;
+(define (get-field-info body) (get-field-info-cps body '(() ()) (lambda (v) v)))
+
+(define (get-field-info-cps body state return)
+  (cond
+    ((null? body) (return state))
+    ((eq? 'var (caar body)) (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
+    (else (return (get-field-info-cps (cdr body) state (lambda (v) v))))))
+
+
 ; Calls a function in a value
 (define (interpret-funcall-value funcall environment throw)
   ; Get the function parameters
@@ -671,3 +681,5 @@
 ; create-closure -> env-creator-function
 ;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
 
+(get-field-info '((var x (* 3 6))))
+(get-field-info '((var x (5)) (var y (10)) (static function main () ())))
