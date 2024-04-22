@@ -43,3 +43,10 @@ jobs:
       - name: Check part 3 test results and prevent push on failure
         if: ${{ failure() }}
         run: echo "Part 3 tests failed. Changes cannot be pushed to main." && exit 1
+
+      - name: Run part 4 unit tests
+        run: raco test tests-p4.rkt
+
+      - name: Check part 4 test results and prevent push on failure
+        if: ${{ failure() }}
+        run: echo "Part 4 tests failed. Changes cannot be pushed to main." && exit 1
