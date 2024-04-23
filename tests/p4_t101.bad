@@ -1,0 +1,7 @@
+class B {
+  var boo = true;
+  static function main() {
+    var b = new B();
+    return b.boo;
+  }
+}
