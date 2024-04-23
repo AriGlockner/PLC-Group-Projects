@@ -1,7 +1,7 @@
 ; Ethan Hansen, Gabriel Wolf, Ari Glockner
 ; CSDS 345 Programming Language Concepts
-; Interpreter Project 3
-; Mar 2024
+; Interpreter Project 4
+; Apr 2024
 
 #lang racket
 (require "functionParser.rkt")
@@ -670,4 +670,165 @@
 ;(check-equal? (get-fn-body-from-closure '((a b) ((= x (+ a b))) procedure)) '((= x (+ a b))))
 ; create-closure -> env-creator-function
 ;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
+
+
+
+
+
+; check if env is empty
+(define empty?
+  (lambda (env)
+    (cond
+      ((eq? env '((()()))) #t)
+      ((null? env) #t)
+      (else #f))))
+
+; reverse index of
+(define (reverseindexof var l)
+  (define (reverseindexof-helper var l index)
+    (cond
+      ((null? l) -1)  ; not found
+      ((eq? var (car l)) index)  ; found, return index
+      (else (reverseindexof-helper var (cdr l) (- index 1)))))  ; continue searching with decremented index
+
+  (reverseindexof-helper var l (- (length l) 1)))  ; start with the length of the list as the initial index
+
+; (env) --> list of class names
+(define get-class-name-list
+  (lambda (env)
+    (cond
+      ((pair? env) (car env))
+      (else
+       (error "env not a pair"))
+      )))
+
+; (env) --> list of class closures
+(define get-class-closure-list
+  (lambda (env)
+    (cond
+      ((pair? env) (cadr env))
+      (else (error "env not a pair"))
+      )))
+
+; (name, env) --> find super or null --> find-class-closure
+(define find-super-or-null
+  (lambda (name env)
+    (cond
+      ((eq? name '()) 'null)
+      ((eq? find-class-closure (cadr name)))
+      (else (find-class-closure name env))
+      )))
+
+; (name of class, env) --> class closure
+(define find-class-closure
+  (lambda (name env)
+    (cond
+      ((empty? env) (error "empty env"))
+      (else
+       (find-class-closure-cps name (get-class-name-list env) (get-class-closure-list env))
+      ))))
+
+; helper for find-class-closure
+(define find-class-closure-cps
+  (lambda (name class-names class-closures)
+    (cond
+      ((or (eq? class-names '()) (eq? class-names '())) (error "class does not exist in state"))
+      ((eq? name (car class-names))
+       (car class-closures))
+      (else (find-class-closure-cps name (cdr class-names) (cdr class-closures)))
+      )))
+
+; (closure, var) --> var index
+(define get-var-index
+  (lambda (closure v)
+    (cond
+      ((eq? closure '()) (error "closure is empty"))
+      (else
+       (reverseindexof v (cadr closure))
+       ))))
+
+
+; (statement) --> class name
+(define get-class-name
+  (lambda (statement)
+    (cond
+      ((null? statement) (error "class is empty"))
+      (else (cadr statement))
+      )))
+
+; (body) --> (list of static functions)
+(define get-static-functions-list
+  (lambda (body)
+   (cond
+      ((eq? body '()) '())
+      ((eq? 'static-function (caar body))
+       (cond
+         ((eq? (cadar body) 'main) 'main)
+         (else (get-static-functions-list (pop-frame body)))
+         ))
+       (else (get-static-functions-list (pop-frame body)))
+       )))
+
+; (body) --> (list of functions)
+(define get-functions-list
+  (lambda (body)
+   (cond
+      ((eq? body '()) '())
+      ((eq? 'function (caar body)) (cons (cadar body) (get-functions-list (pop-frame body))))
+       (else (get-functions-list (pop-frame body)))
+       )))
+      
+; (body) --> ((methods names) (method closures))
+(define get-methods-info
+  (lambda (body)
+    ((eq? body '()) '())
+    
+
+
+
+
+       
+(define state1 '(
+                 (A)
+                 (
+                  ((null)(x y)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
+                  )
+                 (entrypoint)
+                 ((((null)(x y)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))(10 5)))
+                ))
+
+(define state2 '(
+                 (A B)
+                 (
+                  ((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
+                  (((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
+                   (z y x)(5 10 (dot super y))(f)((a) (body_of_f) (f_fn_t0_create_env)))
+                  )
+                 (entrypoint)
+                 ((((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))(5 10)))
+                ))
+
+
+(define parser1 '(
+                  (var x (* 3 6))
+                  (static-function main () ((return 18)))
+                  (function g (z) ((return (+ x z))))
+                  (var y)
+                 )
+  )
+
+
+  
+
+;(get-static-functions-list parser1)
+;(get-functions-list parser1)
+
+
+
+; (get-var-index (find-class-closure 'A state1) y) -> 0
+; (get-var-index (find-class-closure 'A state1) x) -> 1
+;(find-class-closure 'A state1)
+;(get-var-index (find-class-closure 'A state2) 'x)
+;(reverseindexof 'y '(x y z a))
+
 
