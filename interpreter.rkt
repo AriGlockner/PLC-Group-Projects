@@ -499,7 +499,9 @@
             (rest (get-methods-info (cdr body) class-name global-env))
             )
          (list (cons name (car rest)) (cons method-closure (cadr rest)))
-         )))))
+         ))
+      (else (get-methods-info (pop-frame body) class-name global-env))
+      )))
          
 ; another thing ethan said
 (define create-method-closure
