@@ -352,7 +352,7 @@
 
 (define (add-class-closure statement environment)
   (let ((class_name (get-class-name statement)))
-    (insert class_name (make-class-closure class_name statement environment))))
+    (insert class_name (make-class-closure class_name statement environment) environment)))
 
 (define (make-class-closure class_name statement environment)
   (let* (
