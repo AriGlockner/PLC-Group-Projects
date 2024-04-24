@@ -538,6 +538,27 @@
 (define (get-env-creator-from-closure function_closure)
   (operand2 function_closure))
 
+;---------------------------------------
+; Create an Object (instantiate a class)
+;---------------------------------------
+
+;  (let ((class_name (get-class-name statement)))
+;    (insert class_name (make-class-closure class_name statement environment))))
+(define (create-object name env)
+  (let ((closure (find-class-closure name env)))
+    closure))
+  
+  ; (find-class-closure name env)
+
+(define (create-instance-closure)
+  '()
+  )
+
+; 1. Lookup B in the state to get the class closure
+; 2. Create an instance closure
+;    1. Add the closure to B as the runtime type
+;    2. Run through all of the instance fields, evaluate the instance field initial expressions & bind it to the name in the instance fields
+
 ;----------------------------
 ; Environment/State Functions
 ;----------------------------
@@ -869,3 +890,28 @@
 
 (check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
 (check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
+
+(define state1 '(
+                 (A)
+                 (
+                  ((null)(x y)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
+                  )
+                 (entrypoint)
+                 ((((null)(x y)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))(10 5)))
+                ))
+
+(define state2 '(
+                 (A B)
+                 (
+                  ((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
+                  (((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
+                   (z y x)(5 10 (dot super y))(f)((a) (body_of_f) (f_fn_t0_create_env)))
+                  )
+                 (entrypoint)
+                 ((((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))(5 10)))
+                ))
+
+;(find-class-closure 'A state1)
+;(find-class-closure 'A state2)
+;(find-class-closure 'B state2)
+(create-object 'A state1)
