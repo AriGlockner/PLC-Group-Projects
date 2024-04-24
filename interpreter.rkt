@@ -24,9 +24,17 @@
 
 ; interprets a list of statements.  The state/environment from each statement is used for the next ones.
 (define (interpret-statement-list statement-list environment return break continue throw next)
-  (if (null? (debug statement-list))
-      (next environment)
-      (interpret-statement (debug (operator statement-list)) environment return break continue throw (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next)))))
+  (cond
+    ((null? statement-list) (next environment))
+    (else
+     ;(display statement-list)
+      (interpret-statement (operator statement-list)
+                           environment
+                           return
+                           break
+                           continue
+                           throw
+                           (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next))))))
 
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
@@ -149,7 +157,7 @@
 ; interpret something like "class A {body}" and add the class closure to the global state
 (define (interpret-class statement environment return break continue throw next)
   (next 
-   (debug (add-class-closure statement environment))))
+   (add-class-closure statement environment)))
 
 ; Interpret a try-catch-finally block
 
@@ -249,10 +257,6 @@
 (define (eval-binary-op2 expr op1value enviroment throw) (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v)))
 
 (define (eval-binary-op2-cps expr op1value environment throw return)
-;  (display "\nexpr: ")
- ; (display expr)
-  ;(display "\nenv: ")
-  ;(display environment)
   (cond
     ((eq? '+ (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
@@ -357,8 +361,11 @@
          (body (get-class-body statement))
     (super_class (find-super-or-null (get-super-class-name statement) environment))
     (field_names_and_init (get-field-info body))
-    (method_info (get-methods-info body class_name (get-globals environment))))
-  (list super_class field_names_and_init method_info)))
+    (method_info
+     (get-methods-info body class_name (get-globals environment))
+     ))
+  (list super_class field_names_and_init method_info)
+    ))
 
     
 
@@ -449,7 +456,11 @@
   (lambda (statement)
     (cond
       ((empty? statement) (error "class is empty"))
-      (else (car (cadddr statement)))
+      (else
+      ; (display statement)
+       ;(display (car (cadddr statement)))
+       (cadddr statement)
+       )
       )))
 
 ; (body) --> (list of static functions)
@@ -479,13 +490,13 @@
   (lambda (body class-name global-env)
     (cond
       ((eq? body '()) '(()()))
-      ((eq? 'function (car body))
+      ((or (eq? 'function (caar body)) (eq? 'static-function (caar body)))
        (let*
            ((name (cadar body))
             (formal-params (car (cddar body)))
             (function-body (cadr (cddar body)))
             (method-closure (create-method-closure class-name formal-params function-body global-env))
-            (rest (get-methods-info (cdr body)))
+            (rest (get-methods-info (cdr body) class-name global-env))
             )
          (list (cons name (car rest)) (cons method-closure (cadr rest)))
          )))))
@@ -583,7 +594,6 @@
      (get-globals current-env)
      ))
          ])
-  ;(display env)
   env
     )
   )
@@ -643,17 +653,6 @@
 
 ; Return the value bound to a variable in the environment
 (define (lookup-in-env var environment)
-  ; Debugging stuff
-;  (disp "Looking up:")
-;  (disp var)
-;  (disp environment)
-;  (display "Option chosen: ")
-;  (cond
-;    ((null? environment) (disp "null"))
-;    ((exists-in-list? var (variables (topframe environment))) (disp "exists"))
-;    (else (disp "not in current frame")))
- ; (display environment)
-
   ; Actual code
   (cond
     ((null? environment) (myerror "error: undefined variable" var))
@@ -799,15 +798,7 @@
   (lambda (syn)
     (define slist (syntax->list syn))
     (datum->syntax syn `(begin (print ,(cadr slist)) (newline)))))
-  
-;  (letrec ((makestr (lambda (str vals)
- ;                     (if (null? vals)
-  ;                        str
-   ;                       (makestr (string-append str (string-append " " (symbol->string (operator vals)))) (remainingframes vals))))))
-    ;(error-break (display (string-append (string-append str (makestr "" vals)) "\n")))))
-
-
-
+ 
 ; Test environments
 ;(check-equal? (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5)) ((a) (#&10))))
 
@@ -881,3 +872,5 @@
 
 ;(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
 ;(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
+
+(interpret "tests/p4_t3.bad" 'A)
