@@ -777,15 +777,45 @@
       ((eq? 'function (caar body)) (cons (cadar body) (get-functions-list (pop-frame body))))
        (else (get-functions-list (pop-frame body)))
        )))
-      
-; (body) --> ((methods names) (method closures))
+
+; (body class-name global-env) --> ((methods names) (method closures))
 (define get-methods-info
-  (lambda (body)
-    ((eq? body '()) '())
+  (lambda (body class-name global-env)
+    (cond
+      ((eq? body '()) '(()()))
+      ((eq? 'function (caar body))
+       (let*
+           ((name (cadar body))
+            (formal-params (car (cddar body)))
+            (function-body (cadr (cddar body)))
+            (method-closure (create-method-closure class-name formal-params function-body global-env))
+            (rest (get-methods-info (cdr body)))
+            )
+         (list (cons name (car rest)) (cons method-closure (cadr rest)))
+         )))))
+         
+; another thing ethan said
+(define create-method-closure
+  (lambda (compile_type formal_params fn_body global_env)
+    (list formal_params fn_body (make-method-env-creator formal_params global_env)
+          (lambda () (find-class-closure (compile_type global_env))))
+    ))
     
+; do the thing ethan says
+(define (make-method-env-creator formal_param_list global_env)
+  (lambda (current_env actual_param_list)
+    (methods-env global_env current_env actual_param_list formal_param_list)))
 
-
-
+(define (methods-env global_env current-env actual-param-list formal-param-list)
+  (let ((env
+         (cons
+          (bind-actual-formal current-env actual-param-list formal-param-list)
+          (list global_env)
+          )
+         ))
+    env
+    )
+  )
 
        
 (define state1 '(
@@ -816,19 +846,24 @@
                   (var y)
                  )
   )
+    
+
+(define little-double-state1 '(
+                               (B A) ((B_cc) (A_cc))
+                               )
+  )
 
 
-  
+
+(get-methods-info parser1 'main '((B A) ((B_cc)(A_cc))))
+
 
 ;(get-static-functions-list parser1)
 ;(get-functions-list parser1)
-
-
-
 ; (get-var-index (find-class-closure 'A state1) y) -> 0
 ; (get-var-index (find-class-closure 'A state1) x) -> 1
 ;(find-class-closure 'A state1)
 ;(get-var-index (find-class-closure 'A state2) 'x)
 ;(reverseindexof 'y '(x y z a))
-
+;(find-class-closure 'B little-double-state1)
 
