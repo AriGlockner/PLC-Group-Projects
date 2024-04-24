@@ -359,7 +359,7 @@
          (body (get-class-body statement))
     (super_class (find-super-or-null (get-super-class-name statement) environment))
     (field_names_and_init (get-field-info body))
-    (method_info (body class_name (get-globals environment))))
+    (method_info (get-methods-info body class_name (get-globals environment))))
   (list super_class field_names_and_init method_info)))
 
     
@@ -371,7 +371,7 @@
 (define (get-field-info-cps body state return)
   (cond
     ((null? body) (return state))
-    ((eq? 'var (caar body)) (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
+    ((eq? 'var (car body)) (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
     (else (return (get-field-info-cps (cdr body) state (lambda (v) v))))))
 
 ; (env) --> list of class names
@@ -481,7 +481,7 @@
   (lambda (body class-name global-env)
     (cond
       ((eq? body '()) '(()()))
-      ((eq? 'function (caar body))
+      ((eq? 'function (car body))
        (let*
            ((name (cadar body))
             (formal-params (car (cddar body)))
