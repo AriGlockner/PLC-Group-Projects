@@ -817,6 +817,23 @@
     )
   )
 
+; (statement) --> super_class
+(define get-super-class-name
+  (lambda (statement)
+    (cond
+      ((empty? statement) (error "class is empty"))
+      ((null? (caddr statement)) '())
+      (else (cadr (caddr statement)))
+      )))
+
+; (statement) --> class_body
+(define get-class-body
+  (lambda (statement)
+    (cond
+      ((empty? statement) (error "class is empty"))
+      (else (car (cadddr statement)))
+      )))
+           
        
 (define state1 '(
                  (A)
@@ -846,14 +863,12 @@
                   (var y)
                  )
   )
+
+(define parser2 '(class A () (BODY)))
+
+(define parser3 '(class A (extends B) (BODY)))
     
-
-(define little-double-state1 '(
-                               (B A) ((B_cc) (A_cc))
-                               )
-  )
-
-
+(define little-double-state1 '((B A) ((B_cc) (A_cc))))
 
 (get-methods-info parser1 'main '((B A) ((B_cc)(A_cc))))
 
@@ -866,4 +881,6 @@
 ;(get-var-index (find-class-closure 'A state2) 'x)
 ;(reverseindexof 'y '(x y z a))
 ;(find-class-closure 'B little-double-state1)
+
+(get-class-body parser3)
 
