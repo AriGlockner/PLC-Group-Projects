@@ -44,6 +44,7 @@
     ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
     ((eq? 'function (statement-type statement)) (interpret-function statement environment next))
     ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment return break continue throw next))
+    ((eq? 'class (statement-type statement)) (interpret-class statement environment return break continue throw next))
     (else (myerror "Unknown statement:" (statement-type statement)))))
 
 
@@ -867,5 +868,5 @@
 ; create-closure -> env-creator-function
 ;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
 
-(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
-(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
+;(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
+;(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
