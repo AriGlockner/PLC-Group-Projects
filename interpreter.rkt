@@ -24,9 +24,9 @@
 
 ; interprets a list of statements.  The state/environment from each statement is used for the next ones.
 (define (interpret-statement-list statement-list environment return break continue throw next)
-  (if (null? statement-list)
+  (if (null? (debug statement-list))
       (next environment)
-      (interpret-statement (operator statement-list) environment return break continue throw (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next)))))
+      (interpret-statement (debug (operator statement-list)) environment return break continue throw (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next)))))
 
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
@@ -148,10 +148,8 @@
 
 ; interpret something like "class A {body}" and add the class closure to the global state
 (define (interpret-class statement environment return break continue throw next)
-  (interpret-statement-list
-   (remainingframes statement)
-   (add-class-closure statement environment)
-   return break continue throw next))
+  (next 
+   (debug (add-class-closure statement environment))))
 
 ; Interpret a try-catch-finally block
 
@@ -787,6 +785,20 @@
 
 (define (myerror str . vals)
   (error str))
+
+; create the syntax debug
+; (+ 1 (debug x))
+; prints the value of x while still using x in the addition
+(define-syntax debug
+  (lambda (syn)
+    (define slist (syntax->list syn))
+    (datum->syntax syn `(let ((y ,(cadr slist))) (begin (println y) y)))))
+
+; println to print with a newline
+(define-syntax println
+  (lambda (syn)
+    (define slist (syntax->list syn))
+    (datum->syntax syn `(begin (print ,(cadr slist)) (newline)))))
   
 ;  (letrec ((makestr (lambda (str vals)
  ;                     (if (null? vals)
@@ -795,7 +807,6 @@
     ;(error-break (display (string-append (string-append str (makestr "" vals)) "\n")))))
 
 
-(display "Start Debugging:\n")
 
 ; Test environments
 ;(check-equal? (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5)) ((a) (#&10))))
