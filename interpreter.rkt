@@ -542,22 +542,19 @@
 ; Create an Object (instantiate a class)
 ;---------------------------------------
 
-;  (let ((class_name (get-class-name statement)))
-;    (insert class_name (make-class-closure class_name statement environment))))
-(define (create-object name env)
-  (let ((closure (find-class-closure name env)))
-    closure))
-  
-  ; (find-class-closure name env)
-
-(define (create-instance-closure)
-  '()
-  )
-
 ; 1. Lookup B in the state to get the class closure
 ; 2. Create an instance closure
 ;    1. Add the closure to B as the runtime type
 ;    2. Run through all of the instance fields, evaluate the instance field initial expressions & bind it to the name in the instance fields
+
+; Creates a new instance of the class specified in the name parameter
+(define (create-object name env) (create-instance-closure (find-class-closure name env) (lambda (v) v)))
+
+; Copies the values from the class closure over to become the new object
+(define (create-instance-closure class-closure return)
+  (if (null? class-closure)
+      (return '())
+      (return (create-instance-closure (cdr class-closure) (lambda (v) (cons (car class-closure) v))))))
 
 ;----------------------------
 ; Environment/State Functions
@@ -915,3 +912,13 @@
 ;(find-class-closure 'A state2)
 ;(find-class-closure 'B state2)
 (create-object 'A state1)
+;(create-
+
+;(define (list-copy list)
+;  (if (null? list) '() (cons (car list) (list-copy (cdr list)))))
+
+(define original '(1 2 3 4))
+(define copied-list (list-copy original))
+(display original) ; Output: '(1 2 3 4)
+(display copied-list) ; Output: '(1 2 3 4)
+
