@@ -911,14 +911,6 @@
 ;(find-class-closure 'A state1)
 ;(find-class-closure 'A state2)
 ;(find-class-closure 'B state2)
-(create-object 'A state1)
-;(create-
+;(create-object 'A state1)
 
-;(define (list-copy list)
-;  (if (null? list) '() (cons (car list) (list-copy (cdr list)))))
-
-(define original '(1 2 3 4))
-(define copied-list (list-copy original))
-(display original) ; Output: '(1 2 3 4)
-(display copied-list) ; Output: '(1 2 3 4)
 
