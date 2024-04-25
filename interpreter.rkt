@@ -568,6 +568,37 @@
       (return '())
       (return (create-instance-closure (cdr class-closure) (lambda (v) (cons (car class-closure) v))))))
 
+
+; make an instance closure ((class closure)(field values))
+(define make-instance-closure
+  (lambda (class-name env throw)
+    (cond
+      ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
+      (else
+       (cons (find-class-closure class-name env) (list (get-instance-fields class-name env throw)))
+       ))))
+
+; get and evaluates fields
+(define get-instance-fields
+  (lambda (class-name env throw)
+    (cond
+      ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
+      (else
+       (let ((class-closure (find-class-closure class-name env)))
+         (if (list? class-closure)
+             (get-instance-fields-cps (caddr class-closure) env throw)
+             (error "Invalid class-closure")))))))
+
+(define get-instance-fields-cps
+  (lambda (list-of-fields env throw)
+    (cond
+      ((null? list-of-fields) '())
+      ((not (pair? list-of-fields)) (error "Invalid list-of-fields"))
+      (else
+       (cons (eval-expression (car list-of-fields) env throw)
+             (get-instance-fields-cps (cdr list-of-fields) env throw))))))
+
+
 ;----------------------------
 ; Environment/State Functions
 ;----------------------------
@@ -738,10 +769,7 @@
     (else (
            (myerror "error: variable used but not defined:" var))
           )))
-         
-        
-   ; (((() ()) ((b blah x () ()) (#&9 (() ((= x 16)) #<procedure:...ts/interpreter2.rkt:327:2>) #&10 (main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) #<procedure:...ts/interpreter2.rkt:327:2>) #&3)))))
- 
+          
 ; Add a new variable/value pair to the frame.
 (define (add-to-frame var val frame)
   (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame))))
@@ -893,3 +921,45 @@
 
 ;(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
 ;(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
+
+
+(define state1 '(
+                 (A)
+                 (
+                  ((null)(x y)((* 3 8) 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
+                  )
+                ))
+
+(define state2 '(
+                 (A B)
+                 (
+                  ((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
+                  (((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
+                   (z y x)(5 10 (dot super y))(f)((a) (body_of_f) (f_fn_t0_create_env)))
+                  )
+                 (entrypoint)
+                 ((((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))(5 10)))
+                ))
+
+
+(define parser1 '(
+                  (var x (* 3 6))
+                  (static-function main () ((return 18)))
+                  (function g (z) ((return (+ x z))))
+                  (var y)
+                 )
+  )
+
+(define parser2 '(class A () (BODY)))
+
+(define parser3 '(class A (extends B) (BODY)))
+    
+(define little-double-state1 '((B A) ((B_cc) (A_cc))))
+
+
+;(interpret "tests/p4_t11.bad" 'List)
+;(get-methods-info parser1 'main '((B A) ((B_cc)(A_cc))))
+;create-instance-closure (find-class-closure 'A state2) (lambda (return) return))
+;(create-object 'A state2)
+;(get-instance-fields 'A state1 (lambda (throw) throw))
+(make-instance-closure 'A state1 (lambda (throw) throw))
