@@ -24,9 +24,17 @@
 
 ; interprets a list of statements.  The state/environment from each statement is used for the next ones.
 (define (interpret-statement-list statement-list environment return break continue throw next)
-  (if (null? statement-list)
-      (next environment)
-      (interpret-statement (operator statement-list) environment return break continue throw (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next)))))
+  (cond
+    ((null? statement-list) (next environment))
+    (else
+     ;(display statement-list)
+      (interpret-statement (operator statement-list)
+                           environment
+                           return
+                           break
+                           continue
+                           throw
+                           (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next))))))
 
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
@@ -44,6 +52,7 @@
     ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
     ((eq? 'function (statement-type statement)) (interpret-function statement environment next))
     ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment return break continue throw next))
+    ((eq? 'class (statement-type statement)) (interpret-class statement environment return break continue throw next))
     (else (myerror "Unknown statement:" (statement-type statement)))))
 
 
@@ -147,10 +156,8 @@
 
 ; interpret something like "class A {body}" and add the class closure to the global state
 (define (interpret-class statement environment return break continue throw next)
-  (interpret-statement-list
-   (remainingframes statement)
-   (add-class-closure statement environment)
-   return break continue throw next))
+  (next 
+   (add-class-closure statement environment)))
 
 ; Interpret a try-catch-finally block
 
@@ -250,10 +257,6 @@
 (define (eval-binary-op2 expr op1value enviroment throw) (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v)))
 
 (define (eval-binary-op2-cps expr op1value environment throw return)
-;  (display "\nexpr: ")
- ; (display expr)
-  ;(display "\nenv: ")
-  ;(display environment)
   (cond
     ((eq? '+ (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
@@ -351,15 +354,18 @@
 
 (define (add-class-closure statement environment)
   (let ((class_name (get-class-name statement)))
-    (insert class_name (make-class-closure class_name statement environment))))
+    (insert class_name (make-class-closure class_name statement environment) environment)))
 
 (define (make-class-closure class_name statement environment)
   (let* (
          (body (get-class-body statement))
     (super_class (find-super-or-null (get-super-class-name statement) environment))
     (field_names_and_init (get-field-info body))
-    (method_info (body class_name (get-globals environment))))
-  (list super_class field_names_and_init method_info)))
+    (method_info
+     (get-methods-info body class_name (get-globals environment))
+     ))
+  (list super_class field_names_and_init method_info)
+    ))
 
     
 
@@ -370,7 +376,7 @@
 (define (get-field-info-cps body state return)
   (cond
     ((null? body) (return state))
-    ((eq? 'var (caar body)) (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
+    ((eq? 'var (car body)) (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
     (else (return (get-field-info-cps (cdr body) state (lambda (v) v))))))
 
 ; (env) --> list of class names
@@ -450,7 +456,11 @@
   (lambda (statement)
     (cond
       ((empty? statement) (error "class is empty"))
-      (else (car (cadddr statement)))
+      (else
+      ; (display statement)
+       ;(display (car (cadddr statement)))
+       (cadddr statement)
+       )
       )))
 
 ; (body) --> (list of static functions)
@@ -480,16 +490,18 @@
   (lambda (body class-name global-env)
     (cond
       ((eq? body '()) '(()()))
-      ((eq? 'function (caar body))
+      ((or (eq? 'function (caar body)) (eq? 'static-function (caar body)))
        (let*
            ((name (cadar body))
             (formal-params (car (cddar body)))
             (function-body (cadr (cddar body)))
             (method-closure (create-method-closure class-name formal-params function-body global-env))
-            (rest (get-methods-info (cdr body)))
+            (rest (get-methods-info (cdr body) class-name global-env))
             )
          (list (cons name (car rest)) (cons method-closure (cadr rest)))
-         )))))
+         ))
+      (else (get-methods-info (pop-frame body) class-name global-env))
+      )))
          
 ; another thing ethan said
 (define create-method-closure
@@ -602,7 +614,6 @@
      (get-globals current-env)
      ))
          ])
-  ;(display env)
   env
     )
   )
@@ -662,17 +673,6 @@
 
 ; Return the value bound to a variable in the environment
 (define (lookup-in-env var environment)
-  ; Debugging stuff
-;  (disp "Looking up:")
-;  (disp var)
-;  (disp environment)
-;  (display "Option chosen: ")
-;  (cond
-;    ((null? environment) (disp "null"))
-;    ((exists-in-list? var (variables (topframe environment))) (disp "exists"))
-;    (else (disp "not in current frame")))
- ; (display environment)
-
   ; Actual code
   (cond
     ((null? environment) (myerror "error: undefined variable" var))
@@ -804,16 +804,21 @@
 
 (define (myerror str . vals)
   (error str))
-  
-;  (letrec ((makestr (lambda (str vals)
- ;                     (if (null? vals)
-  ;                        str
-   ;                       (makestr (string-append str (string-append " " (symbol->string (operator vals)))) (remainingframes vals))))))
-    ;(error-break (display (string-append (string-append str (makestr "" vals)) "\n")))))
 
+; create the syntax debug
+; (+ 1 (debug x))
+; prints the value of x while still using x in the addition
+(define-syntax debug
+  (lambda (syn)
+    (define slist (syntax->list syn))
+    (datum->syntax syn `(let ((y ,(cadr slist))) (begin (println y) y)))))
 
-(display "Start Debugging:\n")
-
+; println to print with a newline
+(define-syntax println
+  (lambda (syn)
+    (define slist (syntax->list syn))
+    (datum->syntax syn `(begin (print ,(cadr slist)) (newline)))))
+ 
 ; Test environments
 ;(check-equal? (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5)) ((a) (#&10))))
 
@@ -885,32 +890,6 @@
 ; create-closure -> env-creator-function
 ;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
 
-(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
-(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
 
-(define state1 '(
-                 (A)
-                 (
-                  ((null)(x y)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
-                  )
-                 (entrypoint)
-                 ((((null)(x y)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))(10 5)))
-                ))
-
-(define state2 '(
-                 (A B)
-                 (
-                  ((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
-                  (((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
-                   (z y x)(5 10 (dot super y))(f)((a) (body_of_f) (f_fn_t0_create_env)))
-                  )
-                 (entrypoint)
-                 ((((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))(5 10)))
-                ))
-
-;(find-class-closure 'A state1)
-;(find-class-closure 'A state2)
-;(find-class-closure 'B state2)
-;(create-object 'A state1)
-
-
+;(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
+;(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
