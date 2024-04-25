@@ -550,6 +550,24 @@
 (define (get-env-creator-from-closure function_closure)
   (operand2 function_closure))
 
+;---------------------------------------
+; Create an Object (instantiate a class)
+;---------------------------------------
+
+; 1. Lookup B in the state to get the class closure
+; 2. Create an instance closure
+;    1. Add the closure to B as the runtime type
+;    2. Run through all of the instance fields, evaluate the instance field initial expressions & bind it to the name in the instance fields
+
+; Creates a new instance of the class specified in the name parameter
+(define (create-object name env) (create-instance-closure (find-class-closure name env) (lambda (v) v)))
+
+; Copies the values from the class closure over to become the new object
+(define (create-instance-closure class-closure return)
+  (if (null? class-closure)
+      (return '())
+      (return (create-instance-closure (cdr class-closure) (lambda (v) (cons (car class-closure) v))))))
+
 ;----------------------------
 ; Environment/State Functions
 ;----------------------------
@@ -871,6 +889,7 @@
 ;(check-equal? (get-fn-body-from-closure '((a b) ((= x (+ a b))) procedure)) '((= x (+ a b))))
 ; create-closure -> env-creator-function
 ;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
+
 
 ;(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
 ;(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
