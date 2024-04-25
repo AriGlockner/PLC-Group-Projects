@@ -4,7 +4,7 @@
 ; Mar 2024
 
 #lang racket
-(require "functionParser.rkt")
+(require "classParser.rkt")
 (require rackunit)
 ; (load "simpleParser.scm")
 
@@ -16,7 +16,7 @@
 (provide (all-defined-out))
 
 ; The main function.  Calls parser to get the parse tree and interprets it with a new environment.  Sets default continuations for return, break, continue, throw, and "next statement"
-(define (interpret file)
+(define (interpret file entryclass)
   (scheme->language
    (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
                              (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
@@ -24,9 +24,17 @@
 
 ; interprets a list of statements.  The state/environment from each statement is used for the next ones.
 (define (interpret-statement-list statement-list environment return break continue throw next)
-  (if (null? statement-list)
-      (next environment)
-      (interpret-statement (operator statement-list) environment return break continue throw (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next)))))
+  (cond
+    ((null? statement-list) (next environment))
+    (else
+     ;(display statement-list)
+      (interpret-statement (operator statement-list)
+                           environment
+                           return
+                           break
+                           continue
+                           throw
+                           (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next))))))
 
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
@@ -44,7 +52,9 @@
     ((eq? 'try (statement-type statement)) (interpret-try statement environment return break continue throw next))
     ((eq? 'function (statement-type statement)) (interpret-function statement environment next))
     ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment return break continue throw next))
+    ((eq? 'class (statement-type statement)) (interpret-class statement environment return break continue throw next))
     (else (myerror "Unknown statement:" (statement-type statement)))))
+
 
 ; Calls a function in a value
 (define (interpret-funcall-value funcall environment throw)
@@ -141,8 +151,13 @@
                                        (lambda (env) (next (pop-frame env)))))
 
 ; We use a continuation to throw the proper value.  Because we are not using boxes, the environment/state must be thrown as well so any environment changes will be kept
-(define (interpret-throw statement environment throw)
+(define (interpret-throw statement environment return break continue throw next)
   (throw (eval-expression (get-expr statement) environment throw) environment))
+
+; interpret something like "class A {body}" and add the class closure to the global state
+(define (interpret-class statement environment return break continue throw next)
+  (next 
+   (add-class-closure statement environment)))
 
 ; Interpret a try-catch-finally block
 
@@ -242,10 +257,6 @@
 (define (eval-binary-op2 expr op1value enviroment throw) (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v)))
 
 (define (eval-binary-op2-cps expr op1value environment throw return)
-;  (display "\nexpr: ")
- ; (display expr)
-  ;(display "\nenv: ")
-  ;(display environment)
   (cond
     ((eq? '+ (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
@@ -336,6 +347,185 @@
 
 (define (catch-var catch-statement) (operator (operand1 catch-statement)))
 
+
+;------------------------
+; Class Closure Stuff
+;-----------------------
+
+(define (add-class-closure statement environment)
+  (let ((class_name (get-class-name statement)))
+    (insert class_name (make-class-closure class_name statement environment) environment)))
+
+(define (make-class-closure class_name statement environment)
+  (let* (
+         (body (get-class-body statement))
+    (super_class (find-super-or-null (get-super-class-name statement) environment))
+    (field_names_and_init (get-field-info body))
+    (method_info
+     (get-methods-info body class_name (get-globals environment))
+     ))
+  (list super_class field_names_and_init method_info)
+    ))
+
+    
+
+; Gets the fields in a class
+(define (get-field-info body) (get-field-info-cps body '(() ()) (lambda (v) v)))
+
+; Helper function that gets the field info
+(define (get-field-info-cps body state return)
+  (cond
+    ((null? body) (return state))
+    ((eq? 'var (car body)) (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
+    (else (return (get-field-info-cps (cdr body) state (lambda (v) v))))))
+
+; (env) --> list of class names
+(define get-class-name-list
+  (lambda (env)
+    (cond
+      ((pair? env) (car env))
+      (else
+       (error "env not a pair"))
+      )))
+
+; (env) --> list of class closures
+(define get-class-closure-list
+  (lambda (env)
+    (cond
+      ((pair? env) (cadr env))
+      (else (error "env not a pair"))
+      )))
+
+; (name, env) --> find super or null --> find-class-closure
+(define find-super-or-null
+  (lambda (name env)
+    (cond
+      ((eq? name '()) 'null)
+      ((eq? find-class-closure (cadr name)))
+      (else (find-class-closure name env))
+      )))
+
+; (name of class, env) --> class closure
+(define find-class-closure
+  (lambda (name env)
+    (cond
+      ((empty? env) (error "empty env"))
+      (else
+       (find-class-closure-cps name (get-class-name-list env) (get-class-closure-list env))
+      ))))
+
+; helper for find-class-closure
+(define find-class-closure-cps
+  (lambda (name class-names class-closures)
+    (cond
+      ((or (eq? class-names '()) (eq? class-names '())) (error "class does not exist in state"))
+      ((eq? name (car class-names))
+       (car class-closures))
+      (else (find-class-closure-cps name (cdr class-names) (cdr class-closures)))
+      )))
+
+; (closure, var) --> var index
+(define get-var-index
+  (lambda (closure v)
+    (cond
+      ((eq? closure '()) (error "closure is empty"))
+      (else
+       (reverseindexof v (cadr closure))
+       ))))
+
+
+; (statement) --> class name
+(define get-class-name
+  (lambda (statement)
+    (cond
+      ((null? statement) (error "class is empty"))
+      (else (cadr statement))
+      )))
+
+; (statement) --> super_class
+(define get-super-class-name
+  (lambda (statement)
+    (cond
+      ((empty? statement) (error "class is empty"))
+      ((null? (caddr statement)) '())
+      (else (cadr (caddr statement)))
+      )))
+
+; (statement) --> class_body
+(define get-class-body
+  (lambda (statement)
+    (cond
+      ((empty? statement) (error "class is empty"))
+      (else
+      ; (display statement)
+       ;(display (car (cadddr statement)))
+       (cadddr statement)
+       )
+      )))
+
+; (body) --> (list of static functions)
+(define get-static-functions-list
+  (lambda (body)
+   (cond
+      ((eq? body '()) '())
+      ((eq? 'static-function (caar body))
+       (cond
+         ((eq? (cadar body) 'main) 'main)
+         (else (get-static-functions-list (pop-frame body)))
+         ))
+       (else (get-static-functions-list (pop-frame body)))
+       )))
+
+; (body) --> (list of functions)
+(define get-functions-list
+  (lambda (body)
+   (cond
+      ((eq? body '()) '())
+      ((eq? 'function (caar body)) (cons (cadar body) (get-functions-list (pop-frame body))))
+       (else (get-functions-list (pop-frame body)))
+       )))
+
+; (body class-name global-env) --> ((methods names) (method closures))
+(define get-methods-info
+  (lambda (body class-name global-env)
+    (cond
+      ((eq? body '()) '(()()))
+      ((or (eq? 'function (caar body)) (eq? 'static-function (caar body)))
+       (let*
+           ((name (cadar body))
+            (formal-params (car (cddar body)))
+            (function-body (cadr (cddar body)))
+            (method-closure (create-method-closure class-name formal-params function-body global-env))
+            (rest (get-methods-info (cdr body) class-name global-env))
+            )
+         (list (cons name (car rest)) (cons method-closure (cadr rest)))
+         ))
+      (else (get-methods-info (pop-frame body) class-name global-env))
+      )))
+         
+; another thing ethan said
+(define create-method-closure
+  (lambda (compile_type formal_params fn_body global_env)
+    (list formal_params fn_body (make-method-env-creator formal_params global_env)
+          (lambda () (find-class-closure (compile_type global_env))))
+    ))
+    
+; do the thing ethan says
+(define (make-method-env-creator formal_param_list global_env)
+  (lambda (current_env actual_param_list)
+    (methods-env global_env current_env actual_param_list formal_param_list)))
+
+(define (methods-env global_env current-env actual-param-list formal-param-list)
+  (let ((env
+         (cons
+          (bind-actual-formal current-env actual-param-list formal-param-list)
+          (list global_env)
+          )
+         ))
+    env
+    )
+  )
+
 ;------------------------
 ; Closure Functions
 ;------------------------
@@ -406,7 +596,6 @@
      (get-globals current-env)
      ))
          ])
-  ;(display env)
   env
     )
   )
@@ -466,17 +655,6 @@
 
 ; Return the value bound to a variable in the environment
 (define (lookup-in-env var environment)
-  ; Debugging stuff
-;  (disp "Looking up:")
-;  (disp var)
-;  (disp environment)
-;  (display "Option chosen: ")
-;  (cond
-;    ((null? environment) (disp "null"))
-;    ((exists-in-list? var (variables (topframe environment))) (disp "exists"))
-;    (else (disp "not in current frame")))
- ; (display environment)
-
   ; Actual code
   (cond
     ((null? environment) (myerror "error: undefined variable" var))
@@ -503,6 +681,24 @@
     (cond
       ((zero? n) (car l))
       (else (get-value (- n 1) (cdr l))))))
+
+; check if env is empty
+(define empty?
+  (lambda (env)
+    (cond
+      ((eq? env '((()()))) #t)
+      ((null? env) #t)
+      (else #f))))
+
+; reverse index of
+(define (reverseindexof var l)
+  (define (reverseindexof-helper var l index)
+    (cond
+      ((null? l) -1)  ; not found
+      ((eq? var (car l)) index)  ; found, return index
+      (else (reverseindexof-helper var (cdr l) (- index 1)))))  ; continue searching with decremented index
+
+  (reverseindexof-helper var l (- (length l) 1)))  ; start with the length of the list as the initial index
 
 ; Adds a new variable/value binding pair into the environment.  Gives an error if the variable (or a function) already exists in this frame.
 (define (insert var val environment)
@@ -590,16 +786,21 @@
 
 (define (myerror str . vals)
   (error str))
-  
-;  (letrec ((makestr (lambda (str vals)
- ;                     (if (null? vals)
-  ;                        str
-   ;                       (makestr (string-append str (string-append " " (symbol->string (operator vals)))) (remainingframes vals))))))
-    ;(error-break (display (string-append (string-append str (makestr "" vals)) "\n")))))
 
+; create the syntax debug
+; (+ 1 (debug x))
+; prints the value of x while still using x in the addition
+(define-syntax debug
+  (lambda (syn)
+    (define slist (syntax->list syn))
+    (datum->syntax syn `(let ((y ,(cadr slist))) (begin (println y) y)))))
 
-(display "Start Debugging:\n")
-
+; println to print with a newline
+(define-syntax println
+  (lambda (syn)
+    (define slist (syntax->list syn))
+    (datum->syntax syn `(begin (print ,(cadr slist)) (newline)))))
+ 
 ; Test environments
 ;(check-equal? (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5)) ((a) (#&10))))
 
@@ -671,3 +872,5 @@
 ; create-closure -> env-creator-function
 ;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
 
+;(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
+;(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
