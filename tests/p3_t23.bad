@@ -1,3 +1,4 @@
+class A {
 function swap(x, y) {
   var temp = x;
   x = y;
@@ -9,4 +10,5 @@ function main() {
   var b = 2;
   swap(a, b);
   return a;
+}
 }
