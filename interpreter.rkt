@@ -18,14 +18,14 @@
 ; Example of main class closure: '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))
 (define (interpret file entryclass)
   (let* ((entryatom (string->symbol entryclass))
-         (global-env (get-all-classes file entryatom)) ; TODO: fill in with function to get global environment ; Step 1
-        (entry-class-closure (find-class-closure entryatom global-env)) ; Step 2
-        (main-fn-closure (find-function-in-class 'main entry-class-closure)) ; Step 3
-        (main-env ((get-env-creator-from-closure main-fn-closure) global-env '())) ; Step 4
-        (fn_body (cadr main-fn-closure)))
+         (global-env (get-all-classes file entryatom))
+         (entry-class-closure (find-class-closure entryatom global-env))
+         (main-fn-closure (find-function-in-class 'main entry-class-closure))
+         (main-env ((get-env-creator-from-closure main-fn-closure) global-env '()))
+         (fn_body (cadr main-fn-closure)))
     (scheme->language (execute-main fn_body main-env (lambda (v) v)
-                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
-                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))) ; Step 4a
+                                    (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+                                    (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env)))))
 
 (define (get-all-classes file entryclass)
   (scheme->language
@@ -33,17 +33,8 @@
                              (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                              (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
-
 (define (execute-main fn_body env return break continue throw next)
-  (next
-       (interpret-statement-list
-        fn_body
-        env
-        return
-        break
-        continue
-        throw
-        next)))
+  (next (interpret-statement-list fn_body env return break continue throw next)))
 
 
 ; Finds a function within the class closure
@@ -51,38 +42,12 @@
   ; Call the helper function with the fields are removed
   (lookup-function-closure function-name (cddr (unbox class-closure))))
 
-(define state1 '(
-                 (A)
-                 (
-                  ((null)(x y)((* 3 8) 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
-                  )
-                ))
-
-(define state2 '(
-                 (A B)
-                 (
-                  ((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
-                  (((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
-                   (z y x)(5 10 (dot super y))(f)((a) (body_of_f) (f_fn_t0_create_env)))
-                  )
-                ))
-
-
-
-
 ; interprets a list of statements.  The state/environment from each statement is used for the next ones.
 (define (interpret-statement-list statement-list environment return break continue throw next)
-  (cond
-    ((null? statement-list) (next environment))
-    (else
-     ;(display statement-list)
-      (interpret-statement (operator statement-list)
-                           environment
-                           return
-                           break
-                           continue
-                           throw
-                           (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next))))))
+  (if (null? statement-list)
+      (next environment)
+      (interpret-statement (operator statement-list) environment return break continue throw
+                           (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next)))))
 
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
