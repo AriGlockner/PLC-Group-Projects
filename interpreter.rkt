@@ -926,19 +926,17 @@
 (define state1 '(
                  (A)
                  (
-                  ((null)(x y)((* 3 8) 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
+                  ((null)(x y)((* 3 8) 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
                   )
                 ))
 
 (define state2 '(
                  (A B)
                  (
-                  ((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
-                  (((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))
+                  ((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
+                  (((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
                    (z y x)(5 10 (dot super y))(f)((a) (body_of_f) (f_fn_t0_create_env)))
                   )
-                 (entrypoint)
-                 ((((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV))))(5 10)))
                 ))
 
 
