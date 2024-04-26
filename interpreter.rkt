@@ -405,15 +405,11 @@
     (insert class_name (make-class-closure class_name statement environment) environment)))
 
 (define (make-class-closure class_name statement environment)
-  (let* (
-         (body (get-class-body statement))
-    (super_class (find-super-or-null (get-super-class-name statement) environment))
-    (field_names_and_init (get-field-info body))
-    (method_info
-     (get-methods-info body class_name (get-globals environment))
-     ))
-  (list super_class field_names_and_init method_info)
-    ))
+  (let* ((body (get-class-body statement))
+         (super_class (find-super-or-null (get-super-class-name statement) environment))
+         (field_names_and_init (get-field-info body))
+         (method_info (get-methods-info body class_name (get-globals environment))))
+    (list super_class field_names_and_init method_info)))
 
     
 
@@ -428,88 +424,61 @@
     (else (return (get-field-info-cps (cdr body) state (lambda (v) v))))))
 
 ; (env) --> list of class names
-(define get-class-name-list
-  (lambda (env)
-    (cond
-      ((pair? env) (caar env))
-      (else
-       (error "env not a pair"))
-      )))
+(define (get-class-name-list env)
+  (if (pair? env)
+      (caar env)
+      (error "env not a pair")))
 
 ; (env) --> list of class closures
-(define get-class-closure-list
-  (lambda (env)
-    (cond
-      ((pair? env) (cadar env))
-      (else (error "env not a pair"))
-      )))
+(define (get-class-closure-list env)
+  (if (pair? env)
+      (cadar env)
+      (error "env not a pair")))
 
 ; (name, env) --> find super or null --> find-class-closure
-(define find-super-or-null
-  (lambda (name env)
-    (cond
-      ((eq? name '()) 'null)
-      ((eq? find-class-closure (cadr name)))
-      (else (find-class-closure name env))
-      )))
+(define (find-super-or-null name env)
+  (cond
+    ((eq? name '()) 'null)
+    ((eq? find-class-closure (cadr name)))
+    (else (find-class-closure name env))))
 
 ; (name of class, env) --> class closure
-(define find-class-closure
-  (lambda (name env)
-    (cond
-      ((empty? env) (error "empty env"))
-      (else
-       (find-class-closure-cps name (get-class-name-list env) (get-class-closure-list env))
-      ))))
+(define (find-class-closure name env)
+  (if (empty? env)
+      (error "empty env")
+      (find-class-closure-cps name (get-class-name-list env) (get-class-closure-list env))))
 
 ; helper for find-class-closure
-(define find-class-closure-cps
-  (lambda (name class-names class-closures)
-    (cond
-      ((or (eq? class-names '()) (eq? class-names '())) (error "class does not exist in state"))
-      ((eq? name (car class-names))
-       (car class-closures))
-      (else (find-class-closure-cps name (cdr class-names) (cdr class-closures)))
-      )))
+(define (find-class-closure-cps name class-names class-closures)
+  (cond
+    ((or (eq? class-names '()) (eq? class-names '())) (error "class does not exist in state"))
+    ((eq? name (car class-names)) (car class-closures))
+    (else (find-class-closure-cps name (cdr class-names) (cdr class-closures)))))
 
 ; (closure, var) --> var index
-(define get-var-index
-  (lambda (closure v)
-    (cond
-      ((eq? closure '()) (error "closure is empty"))
-      (else
-       (reverseindexof v (cadr closure))
-       ))))
-
+(define (get-var-index closure v)
+  (if (eq? closure '())
+      (error "closure is empty")
+      (reverseindexof v (cadr closure))))
 
 ; (statement) --> class name
-(define get-class-name
-  (lambda (statement)
-    (cond
-      ((null? statement) (error "class is empty"))
-      (else (cadr statement))
-      )))
+(define (get-class-name statement)
+  (if (null? statement)
+      (error "class is empty")
+      (cadr statement)))
 
 ; (statement) --> super_class
-(define get-super-class-name
-  (lambda (statement)
-    (cond
-      ((empty? statement) (error "class is empty"))
-      ((null? (caddr statement)) '())
-      (else (cadr (caddr statement)))
-      )))
+(define (get-super-class-name statement)
+  (cond
+    ((empty? statement) (error "class is empty"))
+    ((null? (caddr statement)) '())
+    (else (cadr (caddr statement)))))
 
 ; (statement) --> class_body
-(define get-class-body
-  (lambda (statement)
-    (cond
-      ((empty? statement) (error "class is empty"))
-      (else
-      ; (display statement)
-       ;(display (car (cadddr statement)))
-       (cadddr statement)
-       )
-      )))
+(define (get-class-body statement)
+  (if (empty? statement)
+      (error "class is empty")
+      (cadddr statement)))
 
 ; (body) --> (list of static functions)
 (define (get-static-functions-list body)
