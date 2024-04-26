@@ -512,51 +512,40 @@
       )))
 
 ; (body) --> (list of static functions)
-(define get-static-functions-list
-  (lambda (body)
-   (cond
-      ((eq? body '()) '())
-      ((eq? 'static-function (caar body))
-       (cond
-         ((eq? (cadar body) 'main) 'main)
-         (else (get-static-functions-list (pop-frame body)))
-         ))
-       (else (get-static-functions-list (pop-frame body)))
-       )))
+(define (get-static-functions-list body)
+  (cond
+    ((eq? body '()) '())
+    ((eq? 'static-function (caar body))
+     (if (eq? (cadar body) 'main)
+         'main
+         (get-static-functions-list (pop-frame body))))
+    (else (get-static-functions-list (pop-frame body)))))
 
 ; (body) --> (list of functions)
-(define get-functions-list
-  (lambda (body)
-   (cond
-      ((eq? body '()) '())
-      ((eq? 'function (caar body)) (cons (cadar body) (get-functions-list (pop-frame body))))
-       (else (get-functions-list (pop-frame body)))
-       )))
+(define (get-functions-list body)
+ (cond
+   ((eq? body '()) '())
+   ((eq? 'function (caar body)) (cons (cadar body) (get-functions-list (pop-frame body))))
+   (else (get-functions-list (pop-frame body)))))
 
 ; (body class-name global-env) --> ((methods names) (method closures))
-(define get-methods-info
-  (lambda (body class-name global-env)
-    (cond
-      ((eq? body '()) '(()()))
-      ((or (eq? 'function (caar body)) (eq? 'static-function (caar body)))
-       (let*
-           ((name (cadar body))
-            (formal-params (car (cddar body)))
-            (function-body (cadr (cddar body)))
-            (method-closure (create-method-closure class-name formal-params function-body global-env))
-            (rest (get-methods-info (cdr body) class-name global-env))
-            )
-         (list (cons name (car rest)) (cons method-closure (cadr rest)))
-         ))
-      (else (get-methods-info (pop-frame body) class-name global-env))
-      )))
+(define (get-methods-info body class-name global-env)
+  (cond
+    ((eq? body '()) '(()()))
+    ((or (eq? 'function (caar body)) (eq? 'static-function (caar body)))
+     (let*
+         ((name (cadar body))
+          (formal-params (car (cddar body)))
+          (function-body (cadr (cddar body)))
+          (method-closure (create-method-closure class-name formal-params function-body global-env))
+          (rest (get-methods-info (cdr body) class-name global-env)))
+       (list (cons name (car rest)) (cons method-closure (cadr rest)))))
+    (else (get-methods-info (pop-frame body) class-name global-env))))
          
 ; another thing ethan said
-(define create-method-closure
-  (lambda (compile_type formal_params fn_body global_env)
-    (list formal_params fn_body (make-method-env-creator formal_params global_env)
-          (lambda () (find-class-closure (compile_type global_env))))
-    ))
+(define (create-method-closure compile_type formal_params fn_body global_env)
+  (list formal_params fn_body (make-method-env-creator formal_params global_env)
+        (lambda () (find-class-closure (compile_type global_env)))))
     
 ; do the thing ethan says
 (define (make-method-env-creator formal_param_list global_env)
@@ -564,15 +553,7 @@
     (methods-env global_env current_env actual_param_list formal_param_list)))
 
 (define (methods-env global_env current-env actual-param-list formal-param-list)
-  (let ((env
-         (cons
-          (bind-actual-formal current-env actual-param-list formal-param-list)
-          (list global_env)
-          )
-         ))
-    env
-    )
-  )
+  (let ((env (cons (bind-actual-formal current-env actual-param-list formal-param-list) (list global_env)))) env))
 
 ;------------------------
 ; Closure Functions
