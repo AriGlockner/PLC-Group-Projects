@@ -224,79 +224,79 @@
     (else (cons 'begin (operand1 finally-statement)))))
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
-(define (eval-expression expr enviroment throw)
-  (eval-expression-cps expr enviroment throw (lambda (v) v)))
+(define (eval-expression expr enviroment throw compile-time run-time)
+  (eval-expression-cps expr enviroment throw (lambda (v) v) compile-time run-time))
 
 (define eval-expression-cps
-  (lambda (expr environment throw return)
+  (lambda (expr environment throw return compile-time run-time)
     (cond
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
       ((not (list? expr)) (return (lookup expr environment)))
       ((eq? (car expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
-      (else (return (eval-operator expr environment throw))))))
+      (else (return (eval-operator expr environment throw compile-time run-time))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
 ; pass the result to eval-binary-op2 to evaluate the right operand.  This forces the operands to be evaluated in the proper order in case you choose
 ; to add side effects to the interpreter
-(define (eval-operator expr enviroment throw) (eval-operator-cps expr enviroment throw (lambda (v) v)))
+(define (eval-operator expr enviroment throw compile-time run-time) (eval-operator-cps expr enviroment throw (lambda (v) v) compile-time run-time))
 
-(define (eval-operator-cps expr environment throw return)
+(define (eval-operator-cps expr environment throw return compile-time run-time)
   (cond
     ((eq? '! (operator expr))
      (eval-expression-cps (operand1 expr) environment throw
-                      (lambda (r-op1) (return (not r-op1)))))
+                      (lambda (r-op1) (return (not r-op1))) compile-time run-time))
     ((and (eq? '- (operator expr)) (= 2 (length expr)))
      (eval-expression-cps (operand1 expr) environment throw
-                      (lambda (r-op1) (return (- r-op1)))))
+                      (lambda (r-op1) (return (- r-op1))) compile-time run-time))
     (else (eval-expression-cps (operand1 expr) environment throw
-                      (lambda (r-op1) (return (eval-binary-op2 expr r-op1 environment throw)))))))
+                      (lambda (r-op1) (return (eval-binary-op2 expr r-op1 environment throw compile-time run-time))) compile-time run-time))))
 
 ; Complete the evaluation of the binary operator by evaluating the second operand and performing the operation.
-(define (eval-binary-op2 expr op1value enviroment throw) (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v)))
+(define (eval-binary-op2 expr op1value enviroment throw compile-time run-time) (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v) compile-time run-time))
 
-(define (eval-binary-op2-cps expr op1value environment throw return)
+(define (eval-binary-op2-cps expr op1value environment throw return compile-time run-time)
   (cond
     ((eq? '+ (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (+ op1value r-op2)))))
+                      (lambda (r-op2) (return (+ op1value r-op2))) compile-time run-time))
     ((eq? '- (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (- op1value r-op2)))))
+                      (lambda (r-op2) (return (- op1value r-op2))) compile-time run-time))
     ((eq? '* (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (* op1value r-op2)))))      
+                      (lambda (r-op2) (return (* op1value r-op2))) compile-time run-time))      
     ((eq? '/ (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (quotient op1value r-op2)))))
+                      (lambda (r-op2) (return (quotient op1value r-op2))) compile-time run-time))
     ((eq? '% (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (remainder op1value r-op2)))))
+                      (lambda (r-op2) (return (remainder op1value r-op2))) compile-time run-time))
     ((eq? '== (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (isequal op1value r-op2)))))
+                      (lambda (r-op2) (return (isequal op1value r-op2))) compile-time run-time))
     ((eq? '!= (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (not(isequal op1value r-op2))))))
+                      (lambda (r-op2) (return (not(isequal op1value r-op2)))) compile-time run-time))
     ((eq? '< (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (< op1value r-op2)))))
+                      (lambda (r-op2) (return (< op1value r-op2))) compile-time run-time))
     ((eq? '> (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (> op1value r-op2)))))
+                      (lambda (r-op2) (return (> op1value r-op2))) compile-time run-time))
     ((eq? '<= (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (<= op1value r-op2)))))
+                      (lambda (r-op2) (return (<= op1value r-op2))) compile-time run-time))
     ((eq? '>= (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (>= op1value r-op2)))))
+                      (lambda (r-op2) (return (>= op1value r-op2))) compile-time run-time))
     ((eq? '|| (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (or op1value r-op2)))))
+                      (lambda (r-op2) (return (or op1value r-op2))) compile-time run-time))
     ((eq? '&& (operator expr))
      (eval-expression-cps (operand2 expr) environment throw
-                      (lambda (r-op2) (return (and op1value r-op2)))))
+                      (lambda (r-op2) (return (and op1value r-op2))) compile-time run-time))
     (else (myerror "Unknown operator:" (operator expr)))))
 
 ; Determines if two values are equal.  We need a special test because there are both boolean and integer types.
@@ -571,32 +571,32 @@
 
 ; make an instance closure ((class closure)(field values))
 (define make-instance-closure
-  (lambda (class-name env throw)
+  (lambda (class-name env throw compile-time run-time)
     (cond
       ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
       (else
-       (cons (find-class-closure class-name env) (list (get-instance-fields class-name env throw)))
+       (cons (find-class-closure class-name env) (list (get-instance-fields class-name env throw compile-time run-time)))
        ))))
 
 ; get and evaluates fields
 (define get-instance-fields
-  (lambda (class-name env throw)
+  (lambda (class-name env throw compile-time run-time)
     (cond
       ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
       (else
        (let ((class-closure (find-class-closure class-name env)))
          (if (list? class-closure)
-             (get-instance-fields-cps (caddr class-closure) env throw)
+             (get-instance-fields-cps (caddr class-closure) env throw compile-time run-time)
              (error "Invalid class-closure")))))))
 
 (define get-instance-fields-cps
-  (lambda (list-of-fields env throw)
+  (lambda (list-of-fields env throw compile-time run-time)
     (cond
       ((null? list-of-fields) '())
       ((not (pair? list-of-fields)) (error "Invalid list-of-fields"))
       (else
-       (cons (eval-expression (car list-of-fields) env throw)
-             (get-instance-fields-cps (cdr list-of-fields) env throw))))))
+       (cons (eval-expression (car list-of-fields) env throw compile-time run-time)
+             (get-instance-fields-cps (cdr list-of-fields) env throw compile-time run-time))))))
 
 
 ;----------------------------
@@ -955,9 +955,9 @@
 (define little-double-state1 '((B A) ((B_cc) (A_cc))))
 
 
-;(interpret "tests/p4_t11.bad" 'List)
-;(get-methods-info parser1 'main '((B A) ((B_cc)(A_cc))))
-;create-instance-closure (find-class-closure 'A state2) (lambda (return) return))
-;(create-object 'A state2)
-;(get-instance-fields 'A state1 (lambda (throw) throw))
-;(make-instance-closure 'A state1 (lambda (throw) throw))
+(interpret "tests/p4_t11.bad" 'List)
+(get-methods-info parser1 'main '((B A) ((B_cc)(A_cc))))
+(create-object 'A state2)
+(get-instance-fields 'A state1 (lambda (throw) throw) (lambda (compile-time) compile-time) (lambda (run-time) run-time))
+(make-instance-closure 'A state1 (lambda (throw) throw) (lambda (compile-time) compile-time) (lambda (run-time) run-time))
+
