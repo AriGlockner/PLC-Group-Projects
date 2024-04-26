@@ -34,16 +34,18 @@
   '()
   )
 
-;
-;(define (foo entryclass)
-;  (let ((global-env          (make-all-global-classes TODO))
-;        (entry-class-closure (find-class-closure entryclass global-env))
-;        (main-class-closure (find-function 'main (cdr entry-class-closure)))
-;        ))
-;  )
+; Example of main class closure: '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))
+(define (foo entryclass)
+  (let* ((global-env          '()) ;(make-all-global-classes 1 1)) ; TODO: fill in with function to get global environment ; Step 1
+        (entry-class-closure (find-class-closure entryclass global-env)) ; Step 2
+        (main-class-closure (find-function 'main (cdr entry-class-closure))) ; Step 3
+        (main-env (get-env-creator-from-closure main-class-closure)) ; Step 4
+        (fn_body (cadr main-class-closure)))
+    (interpret-function (car fn_body) main-env (cdr fn_body)))) ; Step 4a
 
 ; Finds a function within the class closure
 (define (find-function function-name class-closure)
+  ; Call the helper function with the fields are removed
   (find-function-helper function-name (cdddr (caar class-closure))))
 
 (define (find-function-helper function-name class-closure)
