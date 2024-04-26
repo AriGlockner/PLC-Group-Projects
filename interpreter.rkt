@@ -51,11 +51,7 @@
     ((null? class-closure) (myerror "error: function not found")) ; Does not exist
     ((null? (car class-closure)) (find-function-helper function-name (cddr class-closure))) ; layer is empty
     ((eq? function-name (caar class-closure)) (caadr class-closure)) ; Found the function
-    (else (find-function-helper function-name (next-layer class-closure))))) ; Find the next function
-
-; removes the 1st item from the layer in a class
-(define (next-layer class-closure) (list (cdar class-closure) (cdar (cdr class-closure)) (cddr class-closure)))
-
+    (else (find-function-helper function-name (list (cdar class-closure) (cdar (cdr class-closure)) (cddr class-closure)))))) ; Find the next function
 
 (define state1 '(
                  (A)
