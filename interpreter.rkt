@@ -16,32 +16,40 @@
 (provide (all-defined-out))
 
 ; The main function.  Calls parser to get the parse tree and interprets it with a new environment.  Sets default continuations for return, break, continue, throw, and "next statement"
+;(define (interpret file entryclass)
+;  (scheme->language
+;   (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
+;                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+;                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
+
 (define (interpret file entryclass)
   (scheme->language
    (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
                              (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                              (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
-
-; TODO
-; '((class_names) ())
-(define (make-all-global-classes file global-env)
-;  (scheme->language
-;   (let (f (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
-;                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
-;                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
-;   )
-  '()
-  )
+(define (get-all-classes file entryclass)
+  (scheme->language
+   (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
+                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
 ; Example of main class closure: '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))
-(define (foo entryclass)
-  (let* ((global-env          '()) ;(make-all-global-classes 1 1)) ; TODO: fill in with function to get global environment ; Step 1
+(define (foo file entryclass)
+  (display (get-all-classes file entryclass))
+
+  (display (list file entryclass "\n"))
+  (let* ((global-env (get-all-classes file entryclass)) ; TODO: fill in with function to get global environment ; Step 1
+         (display "Step 1")
         (entry-class-closure (find-class-closure entryclass global-env)) ; Step 2
+        (display "Step 2")
         (main-class-closure (find-function 'main (cdr entry-class-closure))) ; Step 3
+        (display "Step 3")
         (main-env (get-env-creator-from-closure main-class-closure)) ; Step 4
         (fn_body (cadr main-class-closure)))
+        (display "Step 4")
     (interpret-function (car fn_body) main-env (cdr fn_body)))) ; Step 4a
+
 
 ; Finds a function within the class closure
 (define (find-function function-name class-closure)
