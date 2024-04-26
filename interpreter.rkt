@@ -30,9 +30,9 @@
         (main-fn-closure (find-function-in-class 'main entry-class-closure)) ; Step 3
         (main-env ((get-env-creator-from-closure main-fn-closure) global-env '())) ; Step 4
         (fn_body (cadr main-fn-closure)))
-    (execute-main fn_body main-env (lambda (v) v)
+    (scheme->language (execute-main fn_body main-env (lambda (v) v)
                              (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
-                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env)))) ; Step 4a
+                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))) ; Step 4a
 
 (define (get-all-classes file entryclass)
   (scheme->language
