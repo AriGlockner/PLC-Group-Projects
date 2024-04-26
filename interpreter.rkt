@@ -22,20 +22,8 @@
 ;                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
 ;                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
-(define (interpret file entryclass)
-  (scheme->language
-   (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
-                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
-                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
-
-(define (get-all-classes file entryclass)
-  (scheme->language
-   (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
-                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
-                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
-
 ; Example of main class closure: '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))
-(define (foo file entryclass)
+(define (interpret file entryclass)
   (let* ((entryatom (string->symbol entryclass))
          (global-env (get-all-classes file entryatom)) ; TODO: fill in with function to get global environment ; Step 1
         (entry-class-closure (find-class-closure entryatom global-env)) ; Step 2
@@ -45,6 +33,12 @@
     (execute-main fn_body main-env (lambda (v) v)
                              (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                              (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env)))) ; Step 4a
+
+(define (get-all-classes file entryclass)
+  (scheme->language
+   (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
+                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
 
 (define (execute-main fn_body env return break continue throw next)
