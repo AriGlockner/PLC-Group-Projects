@@ -290,6 +290,7 @@
       ((eq? expr 'false) (return #f))
       ((not (list? expr)) (return (lookup expr environment)))
       ((eq? (car expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
+      ((eq? (car expr) 'new) (make-instance-closure (cadr expr)  environment throw))
       (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
@@ -574,7 +575,7 @@
   (let ((env
          (cons
           (bind-actual-formal current-env actual-param-list formal-param-list)
-          (list global_env)
+          (list (debug global_env))
           )
          ))
     env
@@ -609,19 +610,34 @@
 ; Create an Object (instantiate a class)
 ;---------------------------------------
 
-; 1. Lookup B in the state to get the class closure
-; 2. Create an instance closure
-;    1. Add the closure to B as the runtime type
-;    2. Run through all of the instance fields, evaluate the instance field initial expressions & bind it to the name in the instance fields
+; make an instance closure ((class closure)(field values))
+(define make-instance-closure
+  (lambda (class-name env throw)
+    (cond
+      ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
+      (else
+       (cons (find-class-closure class-name env) (list (get-instance-fields class-name env throw)))
+       ))))
 
-; Creates a new instance of the class specified in the name parameter
-(define (create-object name env) (create-instance-closure (find-class-closure name env) (lambda (v) v)))
+; get and evaluates fields
+(define get-instance-fields
+  (lambda (class-name env throw)
+    (cond
+      ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
+      (else
+       (let ((class-closure (find-class-closure class-name env)))
+         (if (list? class-closure)
+             (get-instance-fields-cps (caddr class-closure) env throw)
+             (error "Invalid class-closure")))))))
 
-; Copies the values from the class closure over to become the new object
-(define (create-instance-closure class-closure return)
-  (if (null? class-closure)
-      (return '())
-      (return (create-instance-closure (cdr class-closure) (lambda (v) (cons (car class-closure) v))))))
+(define get-instance-fields-cps
+  (lambda (list-of-fields env throw)
+    (cond
+      ((null? list-of-fields) '())
+      ((not (pair? list-of-fields)) (error "Invalid list-of-fields"))
+      (else
+       (cons (eval-expression (car list-of-fields) env throw)
+             (get-instance-fields-cps (cdr list-of-fields) env throw))))))
 
 ;----------------------------
 ; Environment/State Functions
