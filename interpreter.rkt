@@ -930,6 +930,13 @@
                   )
                 ))
 
+(define state1 '(
+                 (A)
+                 (
+                  ((null)(x y)( 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
+                  )
+                ))
+
 (define state2 '(
                  (A B)
                  (
@@ -961,3 +968,4 @@
 (get-instance-fields 'A state1 (lambda (throw) throw) (lambda (compile-time) compile-time) (lambda (run-time) run-time))
 (make-instance-closure 'A state1 (lambda (throw) throw) (lambda (compile-time) compile-time) (lambda (run-time) run-time))
 
+(make-instance-closure 'A state1 (lambda (throw) throw) (lambda (compile-time) compile-time) (lambda (run-time) run-time))
