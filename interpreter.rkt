@@ -22,11 +22,11 @@
 ;                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
 ;                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
-(define (interpret file entryclass)
-  (scheme->language
-   (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
-                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
-                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
+;(define (interpret file entryclass)
+;  (scheme->language
+;   (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
+;                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+;                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
 (define (get-all-classes file entryclass)
   (scheme->language
@@ -35,12 +35,10 @@
                              (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
 ; Example of main class closure: '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))
-(define (foo file entryclass)
-  (display (get-all-classes file entryclass))
+(define (interpret file entryclass)
 
-  (display (list file entryclass "\n"))
-  (let* ((global-env (get-all-classes file entryclass)) ; TODO: fill in with function to get global environment ; Step 1
-         (display "Step 1")
+  (let* ((global-env (get-all-classes file entryclass)) ; Step 1
+        (display "Step 1")
         (entry-class-closure (find-class-closure entryclass global-env)) ; Step 2
         (display "Step 2")
         (main-class-closure (find-function 'main (cdr entry-class-closure))) ; Step 3
