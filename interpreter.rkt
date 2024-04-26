@@ -52,7 +52,7 @@
 ; Finds a function within the class closure
 (define (find-function-in-class function-name class-closure)
   ; Call the helper function with the fields are removed
-  lookup-function-closure function-name (cddr (unbox class-closure)))
+  (debug (lookup-function-closure function-name (cddr (unbox class-closure)))))
 
 (define state1 '(
                  (A)
