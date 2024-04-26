@@ -1,7 +1,9 @@
+class A {
 function test() {
   return 5;
 }
 
 function main() {
   return 1;
+}
 }
