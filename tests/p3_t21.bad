@@ -1,3 +1,4 @@
+class A {
 var a = 1;
 var b = 2;
 
@@ -10,4 +11,5 @@ function swap() {
 function main() {
   swap();
   return a;
+}
 }
