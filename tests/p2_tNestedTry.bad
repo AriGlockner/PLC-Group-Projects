@@ -1,3 +1,4 @@
+class A {
 function main() {
   var x;
 
@@ -16,4 +17,5 @@ catch (e1) {
   x = x + e1;
 }
 return x;
+}
 }

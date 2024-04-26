@@ -1,3 +1,4 @@
+class A {
 var a = 1;
 var b = 2;
 
@@ -7,4 +8,5 @@ function sum(a, b) {
 
 function main() {
   return sum(a, b);
+}
 }
