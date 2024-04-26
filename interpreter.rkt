@@ -15,13 +15,6 @@
 
 (provide (all-defined-out))
 
-; The main function.  Calls parser to get the parse tree and interprets it with a new environment.  Sets default continuations for return, break, continue, throw, and "next statement"
-;(define (interpret file entryclass)
-;  (scheme->language
-;   (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
-;                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
-;                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
-
 ; Example of main class closure: '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))
 (define (interpret file entryclass)
   (let* ((entryatom (string->symbol entryclass))
@@ -675,19 +668,15 @@
 
 
 ; kill global static
-(define kill-global-static
-  (lambda (static)
-    (remove-last static)
-    ))
+(define (kill-global-static static) (remove-last static))
 
 ; creates a binding of the 2 lists
 (define (bind-parameters env actual formal return)
   (cond
     ; Either the actual or formal parameters is empty
-    ((null? actual)
-     (if (null? formal)
-         (return env)
-         (error "The formal and actual parameters must match")))
+    ((null? actual) (if (null? formal)
+                        (return env)
+                        (error "The formal and actual parameters must match")))
     ((null? formal) (error "The formal and actual parameters must match"))
     ; Otherwise
     (else env)))
@@ -728,11 +717,9 @@
 
 ; Return the value bound to a variable in the environment
 (define (lookup-in-env var environment)
-  ; Actual code
   (cond
     ((null? environment) (myerror "error: undefined variable" var))
-    ((exists-in-list? var (variables (topframe environment)))
-     (lookup-in-frame var (topframe environment)))
+    ((exists-in-list? var (variables (topframe environment))) (lookup-in-frame var (topframe environment)))
     (else (lookup-in-env var (cdr environment)))))
 
 ; Return the value bound to a variable in the frame
@@ -749,19 +736,17 @@
     (else (+ 1 (indexof var (remainingframes l))))))
 
 ; Get the value stored at a given index in the list
-(define get-value
-  (lambda (n l)
-    (cond
-      ((zero? n) (car l))
-      (else (get-value (- n 1) (cdr l))))))
+(define (get-value n l)
+  (if (zero? n)
+      (car l)
+      (get-value (- n 1) (cdr l))))
 
 ; check if env is empty
-(define empty?
-  (lambda (env)
-    (cond
-      ((eq? env '((()()))) #t)
-      ((null? env) #t)
-      (else #f))))
+(define (empty? env)
+  (cond
+    ((eq? env '((()()))) #t)
+    ((null? env) #t)
+    (else #f)))
 
 ; reverse index of
 (define (reverseindexof var l)
@@ -770,7 +755,6 @@
       ((null? l) -1)  ; not found
       ((eq? var (car l)) index)  ; found, return index
       (else (reverseindexof-helper var (cdr l) (- index 1)))))  ; continue searching with decremented index
-
   (reverseindexof-helper var l (- (length l) 1)))  ; start with the length of the list as the initial index
 
 ; Adds a new variable/value binding pair into the environment.  Gives an error if the variable (or a function) already exists in this frame.
@@ -787,24 +771,18 @@
 
 ; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
 (define (update var val environment)
-  (cond
-    ((exists? var environment) (update-existing var val environment))
-    
-    (else (
-           (myerror "error: variable used but not defined:" var))
-          )))
-         
+  (if (exists? var environment)
+      (update-existing var val environment)
+      (myerror "error: variable used but not defined:" var)))
         
-   ; (((() ()) ((b blah x () ()) (#&9 (() ((= x 16)) #<procedure:...ts/interpreter2.rkt:327:2>) #&10 (main y) ((() ((var x 10) (function blah () ((= x 16))) (var b 9) (funcall blah) (return x)) #<procedure:...ts/interpreter2.rkt:327:2>) #&3)))))
- 
+
 ; Add a new variable/value pair to the frame.
 (define (add-to-frame var val frame)
   (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame))))
 
 ; Add a new name,function_closure pair to the frame.
-(define add-func-to-frame
-  (lambda (name closure frame)
-    (list (cons name (variables frame)) (cons closure (store frame)))))
+(define (add-func-to-frame name closure frame)
+  (list (cons name (variables frame)) (cons closure (store frame))))
 
 ; Changes the binding of a variable in the environment to a new value
 (define (update-existing var val environment)
@@ -857,22 +835,19 @@
 (define error-break (lambda (v) v))
 (call-with-current-continuation (lambda (k) (set! error-break k)))
 
-(define (myerror str . vals)
-  (error str))
+(define (myerror str . vals) (error str))
 
 ; create the syntax debug
 ; (+ 1 (debug x))
 ; prints the value of x while still using x in the addition
-(define-syntax debug
-  (lambda (syn)
-    (define slist (syntax->list syn))
-    (datum->syntax syn `(let ((y ,(cadr slist))) (begin (println y) y)))))
+(define-syntax (debug syn)
+  (define slist (syntax->list syn))
+  (datum->syntax syn `(let ((y ,(cadr slist))) (begin (println y) y))))
 
 ; println to print with a newline
-(define-syntax println
-  (lambda (syn)
-    (define slist (syntax->list syn))
-    (datum->syntax syn `(begin (print ,(cadr slist)) (newline)))))
+(define-syntax (println syn)
+  (define slist (syntax->list syn))
+  (datum->syntax syn `(begin (print ,(cadr slist)) (newline))))
  
 ; Test environments
 ;(check-equal? (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5)) ((a) (#&10))))
