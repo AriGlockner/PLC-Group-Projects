@@ -962,4 +962,4 @@
 ;create-instance-closure (find-class-closure 'A state2) (lambda (return) return))
 ;(create-object 'A state2)
 ;(get-instance-fields 'A state1 (lambda (throw) throw))
-(make-instance-closure 'A state1 (lambda (throw) throw))
+;(make-instance-closure 'A state1 (lambda (throw) throw))
