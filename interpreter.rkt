@@ -115,15 +115,8 @@
          (env-creator (get-env-creator-from-closure closure)))
     
     ; Interpret the function
-    (interpret-statement-list
-     fn_body ; statement list
-     (env-creator environment actual_params) ; environment
-     (lambda (v) v) ; return 
-     (lambda (env) (myerror "Break used outside of loop")) ; break
-     (lambda (env) (myerror "Continue used outside of loop")) ; continue
-     throw ; throw
-     (lambda (env) env) ; next
-     )))
+    (interpret-statement-list fn_body (env-creator environment actual_params) (lambda (v) v) (lambda (env) (myerror "Break used outside of loop"))
+                              (lambda (env) (myerror "Continue used outside of loop")) throw (lambda (env) env))))
 
 ; Calls a function in a state
 (define (interpret-funcall-state funcall environment return break continue throw next)
@@ -204,8 +197,7 @@
 
 ; interpret something like "class A {body}" and add the class closure to the global state
 (define (interpret-class statement environment return break continue throw next)
-  (next 
-   (add-class-closure statement environment)))
+  (next (add-class-closure statement environment)))
 
 ; Interpret a try-catch-finally block
 
@@ -238,29 +230,24 @@
 
 
 ; get function closure
-(define lookup-function-closure
-  (lambda (function enviroment)
-    (cond
-      ; if empty we couldn't find it
-      ((equal? enviroment '((()()))) 
-       (error "function not found"))
-      ; if its not in that first frame remove first frame and try again
-      ((not (exists-in-list? function (first-frame-variables enviroment))) 
-       (lookup-function-closure function (pop-frame enviroment)))
-      ; if not the first variable in the first frame then remove first and then try again
-      ((not (eq? function (car (first-frame-variables enviroment))))
-       (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (list (cdr (first-frame-values enviroment)))) (pop-frame enviroment))))
-      ; sometimes it's not the only thing left in the list, so take the car
-      ((and (eq? function (car (first-frame-variables enviroment)))
-            (list? (caar (first-frame-values enviroment))))
-       (car (first-frame-values enviroment)))
-      ; if its the first variable in the first frame then return the value
-      ((eq? function (car (first-frame-variables enviroment)))
-       (first-frame-values enviroment))
-      ; else something went wrong
-      (else
-       (error "lookup failed")
-       ))))
+(define (lookup-function-closure function enviroment)
+  (cond
+    ; if empty we couldn't find it
+    ((equal? enviroment '((()()))) (error "function not found"))
+    ; if its not in that first frame remove first frame and try again
+    ((not (exists-in-list? function (first-frame-variables enviroment)))
+     (lookup-function-closure function (pop-frame enviroment)))
+    ; if not the first variable in the first frame then remove first and then try again
+    ((not (eq? function (car (first-frame-variables enviroment))))
+     (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (list (cdr (first-frame-values enviroment)))) (pop-frame enviroment))))
+    ; sometimes it's not the only thing left in the list, so take the car
+    ((and (eq? function (car (first-frame-variables enviroment))) (list? (caar (first-frame-values enviroment))))
+     (car (first-frame-values enviroment)))
+    ; if its the first variable in the first frame then return the value
+    ((eq? function (car (first-frame-variables enviroment)))
+     (first-frame-values enviroment))
+    ; else something went wrong
+    (else (error "lookup failed"))))
 
 ; helper methods so that I can reuse the interpret-block method on the try and finally blocks
 (define (make-try-block try-statement) (cons 'begin try-statement))
