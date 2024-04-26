@@ -36,33 +36,23 @@
 
 ; Example of main class closure: '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))
 (define (foo file entryclass)
-  (display (get-all-classes file entryclass))
-
-  (display (list file entryclass "\n"))
   (let* ((entryatom (string->symbol entryclass))
          (global-env (get-all-classes file entryatom)) ; TODO: fill in with function to get global environment ; Step 1
          (display "Step 1")
         (entry-class-closure (find-class-closure entryatom global-env)) ; Step 2
         (display "Step 2")
-        (main-class-closure (find-function 'main (cdr entry-class-closure))) ; Step 3
+        (main-fn-closure (find-function-in-class 'main entry-class-closure)) ; Step 3
         (display "Step 3")
-        (main-env (get-env-creator-from-closure main-class-closure)) ; Step 4
-        (fn_body (cadr main-class-closure)))
+        (main-env (get-env-creator-from-closure main-fn-closure)) ; Step 4
+        (fn_body (cadr main-fn-closure)))
         (display "Step 4")
     (interpret-function (car fn_body) main-env (cdr fn_body)))) ; Step 4a
 
 
 ; Finds a function within the class closure
-(define (find-function function-name class-closure)
+(define (find-function-in-class function-name class-closure)
   ; Call the helper function with the fields are removed
-  (find-function-helper function-name (cdddr (caar class-closure))))
-
-(define (find-function-helper function-name class-closure)
-  (cond
-    ((null? class-closure) (myerror "error: function not found")) ; Does not exist
-    ((null? (car class-closure)) (find-function-helper function-name (cddr class-closure))) ; layer is empty
-    ((eq? function-name (caar class-closure)) (caadr class-closure)) ; Found the function
-    (else (find-function-helper function-name (list (cdar class-closure) (cdar (cdr class-closure)) (cddr class-closure)))))) ; Find the next function
+  lookup-function-closure function-name (cddr (unbox class-closure)))
 
 (define state1 '(
                  (A)
@@ -955,5 +945,5 @@
 ;(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
 ;(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
 
-(check-equal? (find-function 'main (cdr state1)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
-(check-equal? (find-function 'main (cdr state2)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
+;(check-equal? (find-function 'main (cdr state1)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
+;(check-equal? (find-function 'main (cdr state2)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
