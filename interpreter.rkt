@@ -16,11 +16,66 @@
 (provide (all-defined-out))
 
 ; The main function.  Calls parser to get the parse tree and interprets it with a new environment.  Sets default continuations for return, break, continue, throw, and "next statement"
+;(define (interpret file entryclass)
+;  (scheme->language
+;   (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
+;                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+;                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
+
+; Example of main class closure: '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))
 (define (interpret file entryclass)
+  (let* ((entryatom (string->symbol entryclass))
+         (global-env (get-all-classes file entryatom)) ; TODO: fill in with function to get global environment ; Step 1
+        (entry-class-closure (find-class-closure entryatom global-env)) ; Step 2
+        (main-fn-closure (find-function-in-class 'main entry-class-closure)) ; Step 3
+        (main-env ((get-env-creator-from-closure main-fn-closure) global-env '())) ; Step 4
+        (fn_body (cadr main-fn-closure)))
+    (execute-main fn_body main-env (lambda (v) v)
+                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env)))) ; Step 4a
+
+(define (get-all-classes file entryclass)
   (scheme->language
    (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
                              (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                              (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
+
+
+(define (execute-main fn_body env return break continue throw next)
+  (next
+       (interpret-statement-list
+        fn_body
+        env
+        return
+        break
+        continue
+        throw
+        next)))
+
+
+; Finds a function within the class closure
+(define (find-function-in-class function-name class-closure)
+  ; Call the helper function with the fields are removed
+  (lookup-function-closure function-name (cddr (unbox class-closure))))
+
+(define state1 '(
+                 (A)
+                 (
+                  ((null)(x y)((* 3 8) 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
+                  )
+                ))
+
+(define state2 '(
+                 (A B)
+                 (
+                  ((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
+                  (((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
+                   (z y x)(5 10 (dot super y))(f)((a) (body_of_f) (f_fn_t0_create_env)))
+                  )
+                ))
+
+
+
 
 ; interprets a list of statements.  The state/environment from each statement is used for the next ones.
 (define (interpret-statement-list statement-list environment return break continue throw next)
@@ -383,7 +438,7 @@
 (define get-class-name-list
   (lambda (env)
     (cond
-      ((pair? env) (car env))
+      ((pair? env) (caar env))
       (else
        (error "env not a pair"))
       )))
@@ -392,7 +447,7 @@
 (define get-class-closure-list
   (lambda (env)
     (cond
-      ((pair? env) (cadr env))
+      ((pair? env) (cadar env))
       (else (error "env not a pair"))
       )))
 
@@ -893,3 +948,6 @@
 
 ;(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
 ;(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
+
+;(check-equal? (find-function 'main (cdr state1)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
+;(check-equal? (find-function 'main (cdr state2)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
