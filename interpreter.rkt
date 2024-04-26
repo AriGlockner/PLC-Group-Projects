@@ -38,14 +38,10 @@
 (define (foo file entryclass)
   (let* ((entryatom (string->symbol entryclass))
          (global-env (get-all-classes file entryatom)) ; TODO: fill in with function to get global environment ; Step 1
-         (display "Step 1")
         (entry-class-closure (find-class-closure entryatom global-env)) ; Step 2
-        (display "Step 2")
         (main-fn-closure (find-function-in-class 'main entry-class-closure)) ; Step 3
-        (display "Step 3")
-        (main-env (get-env-creator-from-closure main-fn-closure)) ; Step 4
+        (main-env ((get-env-creator-from-closure main-fn-closure) global-env '())) ; Step 4
         (fn_body (cadr main-fn-closure)))
-        (display "Step 4")
     (interpret-function (car fn_body) main-env (cdr fn_body)))) ; Step 4a
 
 
