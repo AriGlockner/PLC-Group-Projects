@@ -22,6 +22,60 @@
                              (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                              (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
+
+; TODO
+; '((class_names) ())
+(define (make-all-global-classes file global-env)
+;  (scheme->language
+;   (let (f (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
+;                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+;                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
+;   )
+  '()
+  )
+
+;
+;(define (foo entryclass)
+;  (let ((global-env          (make-all-global-classes TODO))
+;        (entry-class-closure (find-class-closure entryclass global-env))
+;        (main-class-closure (find-function 'main (cdr entry-class-closure)))
+;        ))
+;  )
+
+; Finds a function within the class closure
+(define (find-function function-name class-closure)
+  (find-function-helper function-name (cdddr (caar class-closure))))
+
+(define (find-function-helper function-name class-closure)
+  (cond
+    ((null? class-closure) (myerror "error: function not found")) ; Does not exist
+    ((null? (car class-closure)) (find-function-helper function-name (cddr class-closure))) ; layer is empty
+    ((eq? function-name (caar class-closure)) (caadr class-closure)) ; Found the function
+    (else (find-function-helper function-name (next-layer class-closure))))) ; Find the next function
+
+; removes the 1st item from the layer in a class
+(define (next-layer class-closure) (list (cdar class-closure) (cdar (cdr class-closure)) (cddr class-closure)))
+
+
+(define state1 '(
+                 (A)
+                 (
+                  ((null)(x y)((* 3 8) 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
+                  )
+                ))
+
+(define state2 '(
+                 (A B)
+                 (
+                  ((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
+                  (((null)(y x)(5 10)(main)((() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))))
+                   (z y x)(5 10 (dot super y))(f)((a) (body_of_f) (f_fn_t0_create_env)))
+                  )
+                ))
+
+
+
+
 ; interprets a list of statements.  The state/environment from each statement is used for the next ones.
 (define (interpret-statement-list statement-list environment return break continue throw next)
   (cond
@@ -893,3 +947,6 @@
 
 ;(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
 ;(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
+
+(check-equal? (find-function 'main (cdr state1)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
+(check-equal? (find-function 'main (cdr state2)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
