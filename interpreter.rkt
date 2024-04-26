@@ -591,21 +591,14 @@
 (define (get-form-params-from-closure function_closure) (operator function_closure))
 
 ; takes in the closure and returns just the body
-(define (get-fn-body-from-closure function_closure)
-  (operand1 function_closure))
+(define (get-fn-body-from-closure function_closure) (operand1 function_closure))
 
 ; takes in the closure and returns the function that creates a new environment
-(define (get-env-creator-from-closure function_closure)
-  (operand2 function_closure))
+(define (get-env-creator-from-closure function_closure) (operand2 function_closure))
 
 ;---------------------------------------
 ; Create an Object (instantiate a class)
 ;---------------------------------------
-
-; 1. Lookup B in the state to get the class closure
-; 2. Create an instance closure
-;    1. Add the closure to B as the runtime type
-;    2. Run through all of the instance fields, evaluate the instance field initial expressions & bind it to the name in the instance fields
 
 ; Creates a new instance of the class specified in the name parameter
 (define (create-object name env) (create-instance-closure (find-class-closure name env) (lambda (v) v)))
@@ -654,17 +647,9 @@
 
 ; Create the environment for the function
 (define (function-environment static-env current-env actual-param-list formal-param-list)
-  (let ([env
-         (cons
-    (bind-actual-formal current-env actual-param-list formal-param-list)
-    (append
-     (kill-global-static static-env)
-     (get-globals current-env)
-     ))
-         ])
-  env
-    )
-  )
+  (let ([env (cons (bind-actual-formal current-env actual-param-list formal-param-list)
+                   (append (kill-global-static static-env) (get-globals current-env)))])
+    env))
 
 
 ; kill global static
