@@ -414,14 +414,14 @@
 (define (get-super-class-name statement)
   (cond
     ((empty? statement) (error "class is empty"))
-    ((null? (caddr statement)) '())
-    (else (operand1 (caddr statement)))))
+    ((null? (operand2 statement)) '())
+    (else (operand1 (operand2 statement)))))
 
 ; (statement) --> class_body
 (define (get-class-body statement)
   (if (empty? statement)
       (error "class is empty")
-      (cadddr statement)))
+      (operand3 statement)))
 
 ; (body) --> (list of static functions)
 (define (get-static-functions-list body)
