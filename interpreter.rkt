@@ -22,7 +22,7 @@
          (entry-class-closure (find-class-closure entryatom global-env))
          (main-fn-closure (find-function-in-class 'main entry-class-closure))
          (main-env ((get-env-creator-from-closure main-fn-closure) global-env '()))
-         (fn_body (cadr main-fn-closure)))
+         (fn_body (operand1 main-fn-closure)))
     (scheme->language (execute-main fn_body main-env (lambda (v) v)
                                     (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                                     (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env)))))
@@ -41,7 +41,7 @@
 ; Finds a function within the class closure
 (define (find-function-in-class function-name class-closure)
   ; Call the helper function with the fields are removed
-  (lookup-function-closure function-name (cddr (unbox class-closure))))
+  (lookup-function-closure function-name (remove2 (unbox class-closure))))
 
 ; interprets a list of statements.  The state/environment from each statement is used for the next ones.
 (define (interpret-statement-list statement-list environment return break continue throw next)
@@ -193,25 +193,25 @@
     ((not (exists-in-list? function (first-frame-variables enviroment)))
      (lookup-function-closure function (pop-frame enviroment)))
     ; if not the first variable in the first frame then remove first and then try again
-    ((not (eq? function (car (first-frame-variables enviroment))))
-     (lookup-function-closure function (cons (cons (cdr (first-frame-variables enviroment)) (list (cdr (first-frame-values enviroment)))) (pop-frame enviroment))))
+    ((not (eq? function (operator (first-frame-variables enviroment))))
+     (lookup-function-closure function (combine (combine (remove1 (first-frame-variables enviroment)) (list (remove1 (first-frame-values enviroment)))) (pop-frame enviroment))))
     ; sometimes it's not the only thing left in the list, so take the car
-    ((and (eq? function (car (first-frame-variables enviroment))) (list? (caar (first-frame-values enviroment))))
-     (car (first-frame-values enviroment)))
+    ((and (eq? function (operator (first-frame-variables enviroment))) (list? (caar (first-frame-values enviroment))))
+     (operator (first-frame-values enviroment)))
     ; if its the first variable in the first frame then return the value
-    ((eq? function (car (first-frame-variables enviroment)))
+    ((eq? function (operator (first-frame-variables enviroment)))
      (first-frame-values enviroment))
     ; else something went wrong
     (else (error "lookup failed"))))
 
 ; helper methods so that I can reuse the interpret-block method on the try and finally blocks
-(define (make-try-block try-statement) (cons 'begin try-statement))
+(define (make-try-block try-statement) (combine 'begin try-statement))
 
 (define (make-finally-block finally-statement)
   (cond
     ((null? finally-statement) '(begin))
     ((not (eq? (statement-type finally-statement) 'finally)) (myerror "Incorrectly formatted finally block"))
-    (else (cons 'begin (operand1 finally-statement)))))
+    (else (combine 'begin (operand1 finally-statement)))))
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
 (define (eval-expression expr enviroment throw)
@@ -224,7 +224,7 @@
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
       ((not (list? expr)) (return (lookup expr environment)))
-      ((eq? (car expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
+      ((eq? (operator expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
       (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
@@ -301,16 +301,20 @@
 
 (define (atom? x) (not (pair? x)))
 
+(define combine cons)
+
 ; These helper functions define the operator and operands of a value expression
 (define operator car)
 (define operand1 cadr)
 (define operand2 caddr)
 (define operand3 cadddr)
 
-;(define remove1 cdr)
+(define remove1 cdr)
+(define remove2 cddr)
+(define remove3 cdddr)
 
-(define (exists-operand2? statement) (not (null? (cddr statement))))
-(define (exists-operand3? statement) (not (null? (cdddr statement))))
+(define (exists-operand2? statement) (not (null? (remove2 statement))))
+(define (exists-operand3? statement) (not (null? (remove3 statement))))
 
 ; these helper functions define the parts of the various statement types
 (define statement-type operator)
@@ -333,7 +337,7 @@
 (define get-formal-params operand2)
 (define get-function-body operand3)
 
-(define get-actual-params cddr)
+(define get-actual-params remove2)
 
 (define (catch-var catch-statement) (operator (operand1 catch-statement)))
 
@@ -359,8 +363,8 @@
 (define (get-field-info-cps body state return)
   (cond
     ((null? body) (return state))
-    ((eq? 'var (car body)) (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
-    (else (return (get-field-info-cps (cdr body) state (lambda (v) v))))))
+    ((eq? 'var (operator body)) (get-field-info-cps (remove1 body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
+    (else (return (get-field-info-cps (remove1 body) state (lambda (v) v))))))
 
 ; (env) --> list of class names
 (define (get-class-name-list env)
@@ -378,7 +382,7 @@
 (define (find-super-or-null name env)
   (cond
     ((eq? name '()) 'null)
-    ((eq? find-class-closure (cadr name)))
+    ((eq? find-class-closure (operand1 name)))
     (else (find-class-closure name env))))
 
 ; (name of class, env) --> class closure
@@ -391,27 +395,27 @@
 (define (find-class-closure-cps name class-names class-closures)
   (cond
     ((or (eq? class-names '()) (eq? class-names '())) (error "class does not exist in state"))
-    ((eq? name (car class-names)) (car class-closures))
-    (else (find-class-closure-cps name (cdr class-names) (cdr class-closures)))))
+    ((eq? name (operator class-names)) (operator class-closures))
+    (else (find-class-closure-cps name (remove1 class-names) (remove1 class-closures)))))
 
 ; (closure, var) --> var index
 (define (get-var-index closure v)
   (if (eq? closure '())
       (error "closure is empty")
-      (reverseindexof v (cadr closure))))
+      (reverseindexof v (operand1 closure))))
 
 ; (statement) --> class name
 (define (get-class-name statement)
   (if (null? statement)
       (error "class is empty")
-      (cadr statement)))
+      (operand1 statement)))
 
 ; (statement) --> super_class
 (define (get-super-class-name statement)
   (cond
     ((empty? statement) (error "class is empty"))
     ((null? (caddr statement)) '())
-    (else (cadr (caddr statement)))))
+    (else (operand1 (caddr statement)))))
 
 ; (statement) --> class_body
 (define (get-class-body statement)
@@ -433,7 +437,7 @@
 (define (get-functions-list body)
  (cond
    ((eq? body '()) '())
-   ((eq? 'function (caar body)) (cons (cadar body) (get-functions-list (pop-frame body))))
+   ((eq? 'function (caar body)) (combine (cadar body) (get-functions-list (pop-frame body))))
    (else (get-functions-list (pop-frame body)))))
 
 ; (body class-name global-env) --> ((methods names) (method closures))
@@ -443,11 +447,11 @@
     ((or (eq? 'function (caar body)) (eq? 'static-function (caar body)))
      (let*
          ((name (cadar body))
-          (formal-params (car (cddar body)))
-          (function-body (cadr (cddar body)))
+          (formal-params (operator (cddar body)))
+          (function-body (operand1 (cddar body)))
           (method-closure (create-method-closure class-name formal-params function-body global-env))
-          (rest (get-methods-info (cdr body) class-name global-env)))
-       (list (cons name (car rest)) (cons method-closure (cadr rest)))))
+          (rest (get-methods-info (remove1 body) class-name global-env)))
+       (list (combine name (operator rest)) (combine method-closure (operand1 rest)))))
     (else (get-methods-info (pop-frame body) class-name global-env))))
          
 ; another thing ethan said
@@ -461,7 +465,7 @@
     (methods-env global_env current_env actual_param_list formal_param_list)))
 
 (define (methods-env global_env current-env actual-param-list formal-param-list)
-  (let ((env (cons (bind-actual-formal current-env actual-param-list formal-param-list) (list global_env)))) env))
+  (let ((env (combine (bind-actual-formal current-env actual-param-list formal-param-list) (list global_env)))) env))
 
 ;------------------------
 ; Closure Functions
@@ -496,7 +500,7 @@
 (define (create-instance-closure class-closure return)
   (if (null? class-closure)
       (return '())
-      (return (create-instance-closure (cdr class-closure) (lambda (v) (cons (car class-closure) v))))))
+      (return (create-instance-closure (remove1 class-closure) (lambda (v) (combine (operator class-closure) v))))))
 
 ;----------------------------
 ; Environment/State Functions
@@ -536,7 +540,7 @@
 
 ; Create the environment for the function
 (define (function-environment static-env current-env actual-param-list formal-param-list)
-  (let ([env (cons (bind-actual-formal current-env actual-param-list formal-param-list)
+  (let ([env (combine (bind-actual-formal current-env actual-param-list formal-param-list)
                    (append (kill-global-static static-env) (get-globals current-env)))])
     env))
 
@@ -556,14 +560,14 @@
     (else env)))
 
 ; add a frame onto the top of the environment
-(define (push-frame environment) (cons (emptyframe) environment))
+(define (push-frame environment) (combine (emptyframe) environment))
 
 ; remove a frame from the environment
 (define (pop-frame environment) (remainingframes environment))
 
 ; some abstractions
 (define topframe operator)
-(define remainingframes cdr)
+(define remainingframes remove1)
 
 ; does a variable exist in the environment?
 (define (exists? var environment)
@@ -594,7 +598,7 @@
   (cond
     ((null? environment) (myerror "error: undefined variable" var))
     ((exists-in-list? var (variables (topframe environment))) (lookup-in-frame var (topframe environment)))
-    (else (lookup-in-env var (cdr environment)))))
+    (else (lookup-in-env var (remove1 environment)))))
 
 ; Return the value bound to a variable in the frame
 (define (lookup-in-frame var frame)  
@@ -612,8 +616,8 @@
 ; Get the value stored at a given index in the list
 (define (get-value n l)
   (if (zero? n)
-      (car l)
-      (get-value (- n 1) (cdr l))))
+      (operator l)
+      (get-value (- n 1) (remove1 l))))
 
 ; check if env is empty
 (define (empty? env)
@@ -627,21 +631,21 @@
   (define (reverseindexof-helper var l index)
     (cond
       ((null? l) -1)  ; not found
-      ((eq? var (car l)) index)  ; found, return index
-      (else (reverseindexof-helper var (cdr l) (- index 1)))))  ; continue searching with decremented index
+      ((eq? var (operator l)) index)  ; found, return index
+      (else (reverseindexof-helper var (remove1 l) (- index 1)))))  ; continue searching with decremented index
   (reverseindexof-helper var l (- (length l) 1)))  ; start with the length of the list as the initial index
 
 ; Adds a new variable/value binding pair into the environment.  Gives an error if the variable (or a function) already exists in this frame.
 (define (insert var val environment)
   (if (exists-in-list? var (variables (operator environment)))
       (myerror "error: variable is being re-declared:" var)
-      (cons (add-to-frame var val (operator environment)) (remainingframes environment))))
+      (combine (add-to-frame var val (operator environment)) (remainingframes environment))))
 
 ; Adds a new function/(params) (body) pair into the environment. Gives an error if the function (or a variable) already exists in this frame.
 (define (insert-function name formal-params func-body environment)
   (if (exists-in-list? name (variables (operator environment)))
       (myerror "error: variable is being re-declared:" name)
-      (cons (add-func-to-frame name (make_closure formal-params func-body environment) (operator environment)) (remainingframes environment))))
+      (combine (add-func-to-frame name (make_closure formal-params func-body environment) (operator environment)) (remainingframes environment))))
 
 ; Changes the binding of a variable to a new value in the environment.  Gives an error if the variable does not exist.
 (define (update var val environment)
@@ -652,17 +656,17 @@
 
 ; Add a new variable/value pair to the frame.
 (define (add-to-frame var val frame)
-  (list (cons var (variables frame)) (cons (box (scheme->language val)) (store frame))))
+  (list (combine var (variables frame)) (combine (box (scheme->language val)) (store frame))))
 
 ; Add a new name,function_closure pair to the frame.
 (define (add-func-to-frame name closure frame)
-  (list (cons name (variables frame)) (cons closure (store frame))))
+  (list (combine name (variables frame)) (combine closure (store frame))))
 
 ; Changes the binding of a variable in the environment to a new value
 (define (update-existing var val environment)
   (if (exists-in-list? var (variables (operator environment)))
-      (cons (update-in-frame var val (topframe environment)) (remainingframes environment))
-      (cons (topframe environment) (update-existing var val (remainingframes environment)))))
+      (combine (update-in-frame var val (topframe environment)) (remainingframes environment))
+      (combine (topframe environment) (update-existing var val (remainingframes environment)))))
 
 ; Changes the binding of a variable in the frame to a new value.
 (define (update-in-frame var val frame)
@@ -672,7 +676,7 @@
 (define (update-in-frame-store var val varlist vallist)
   (if (eq? var (operator varlist))
       (begin (set-box! (operator vallist) (scheme->language val)) vallist)
-      (cons (operator vallist) (update-in-frame-store var val (remainingframes varlist) (remainingframes vallist)))))
+      (combine (operator vallist) (update-in-frame-store var val (remainingframes varlist) (remainingframes vallist)))))
 
 ; Returns the list of variables from a frame
 (define (variables frame) (operator frame))
@@ -688,8 +692,8 @@
 
 ; remove last elment of list
 (define (remove-last lst)
-  (if (null? (cdr lst)) '()
-      (cons (car lst) (remove-last (cdr lst)))))
+  (if (null? (remove1 lst)) '()
+      (combine (operator lst) (remove-last (remove1 lst)))))
 
 
 ; Functions to convert the Scheme #t and #f to our languages true and false, and back.
