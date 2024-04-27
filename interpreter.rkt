@@ -15,7 +15,7 @@
 
 (provide (all-defined-out))
 
-; Example of main class closure: '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE))
+; Interprets the file. After compilation, runs the class's main body from entryclass
 (define (interpret file entryclass)
   (let* ((entryatom (string->symbol entryclass))
          (global-env (get-all-classes file entryatom))
@@ -27,15 +27,16 @@
                                     (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                                     (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env)))))
 
+; Compiles all classes
 (define (get-all-classes file entryclass)
   (scheme->language
    (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
                              (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                              (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
+; Executes the specified main function
 (define (execute-main fn_body env return break continue throw next)
   (next (interpret-statement-list fn_body env return break continue throw next)))
-
 
 ; Finds a function within the class closure
 (define (find-function-in-class function-name class-closure)
@@ -48,7 +49,6 @@
       (next environment)
       (interpret-statement (operator statement-list) environment return break continue throw
                            (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next)))))
-
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
 (define (interpret-statement statement environment return break continue throw next)
@@ -67,7 +67,6 @@
     ((eq? 'funcall (statement-type statement)) (interpret-funcall-state statement environment return break continue throw next))
     ((eq? 'class (statement-type statement)) (interpret-class statement environment return break continue throw next))
     (else (myerror "Unknown statement:" (statement-type statement)))))
-
 
 ; Calls a function in a value
 (define (interpret-funcall-value funcall environment throw)
@@ -94,17 +93,9 @@
          (env-creator (get-env-creator-from-closure closure)))
     
     ; Interpret the function
-    (next
-     (begin
-       (interpret-statement-list
-        fn_body
-        (env-creator environment actual_params)
-        return
-        (lambda (env) (myerror "Break used outside of loop"))
-        (lambda (env) (myerror "Continue used outside of loop"))
-        throw
-        next)
-       environment))))
+    (next (begin (interpret-statement-list fn_body (env-creator environment actual_params)
+                                           return (lambda (env) (myerror "Break used outside of loop"))
+                                           (lambda (env) (myerror "Continue used outside of loop")) throw next) environment))))
 
 ; Adds a new function to the environment. Global functions are declared with the global variables. Nested functions are declared with the local variables
 (define interpret-function
@@ -192,7 +183,6 @@
          (new-continue (lambda (env) (interpret-block finally-block env return break continue throw (lambda (env2) (continue env2)))))
          (new-throw (create-throw-catch-continuation (get-catch statement) environment return break continue throw next finally-block)))
     (interpret-block try-block environment new-return new-break new-continue new-throw (lambda (env) (interpret-block finally-block env return break continue throw next)))))
-
 
 ; get function closure
 (define (lookup-function-closure function enviroment)
@@ -347,7 +337,6 @@
 
 (define (catch-var catch-statement) (operator (operand1 catch-statement)))
 
-
 ;------------------------
 ; Class Closure Stuff
 ;-----------------------
@@ -362,8 +351,6 @@
          (field_names_and_init (get-field-info body))
          (method_info (get-methods-info body class_name (get-globals environment))))
     (list super_class field_names_and_init method_info)))
-
-    
 
 ; Gets the fields in a class
 (define (get-field-info body) (get-field-info-cps body '(() ()) (lambda (v) v)))
@@ -735,81 +722,3 @@
 (define-syntax (println syn)
   (define slist (syntax->list syn))
   (datum->syntax syn `(begin (print ,(cadr slist)) (newline))))
- 
-; Test environments
-;(check-equal? (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5)) ((a) (#&10))))
-
-; Check getting the global variables
-;(check-equal? (get-globals '((() ()))) '((() ())))
-;(check-equal? (get-globals (insert 'a 1 (insert 'b 5 '((() ()))))) '(((a b) (#&1 #&5))))
-;(check-equal? (get-globals (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ())))))) '(((a) (#&10))))
-
-; Check binding variables to values
-;(define global_var (newenvironment (insert 'a 10 '((() ()))) (insert 'a 1 (insert 'b 5 '((() ()))))))
-;(define parameter_definitions '(x y z))
-;(define parameter_bindings '(a 10 (+ a b)))
-;(check-equal? (bind-actual-formal global_var parameter_bindings parameter_definitions) '((z y x) (#&6 #&10 #&1)))
-
-; (function-environment current-env defined-params passed-in-params)
-;(check-equal? (function-environment global_var parameter_bindings parameter_definitions) '(((z y x) (#&6 #&10 #&1)) ((a) (#&10))))
-
-
-; function definition
-; Without parameters
-;(define add-function (interpret-function '(function add () (return 1)) (initenvironment) (lambda (v) v)))
-;(check-equal? (caaar add-function) 'add)
-;(check-equal? (car (caadar add-function)) '())
-;(check-equal? (car (cdr (caadar add-function))) '(return 1))
-
-; With parameters
-;(define add-function2 (interpret-function '(function add (a b) (return (+ a b))) (initenvironment) (lambda (v) v)))
-;(check-equal? (caaar add-function2) 'add)
-;(check-equal? (car (caadar add-function2)) '(a b))
-;(check-equal? (car (cdr (caadar add-function2))) '(return (+ a b)))
-
-;
-; (lambda (funcall environment throw)
-;(interpret-funcall-value '(funcall add) add-function (lambda (v) v))
-
-;(((add) ((() (return 1) #<procedure:...ts/interpreter2.rkt:311:2>))))
-
-;(lookup-function-closure 'f '(((main myfunc x)
- ;  ((() ((funcall myfunc 6 x)) #<procedure:...ts/interpreter2.rkt:311:2>)
- ;   ((a b) ((= x (+ a b))) #<procedure:...ts/interpreter2.rkt:311:2>)
-;    #&10)))
-
-
-;(interpret "scratch.bad")
-
-;(lookup 'r '(((z r) (1 2)) ((main myfunc x)
- ;  ((() ((funcall myfunc 6 x)) procedure)
- ;   ((a b) ((= x (+ a b))) procedure)
- ;   #&10))))
-
-;(lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
-;   ((() ((funcall myfunc 6 x)) procedure)
-;    ((a b) ((= x (+ a b))) procedure)
-;    #&10)) ((q l) (3 4))
-;       ))
-
-; test lookup-function-closure
-;(check-equal? (lookup-function-closure 'myfunc '(((z r) (1 2)) ((main myfunc x)
- ;  ((() ((funcall myfunc 6 x)) procedure)
-  ;  ((a b) ((= x (+ a b))) procedure)
-   ; #&10)) ((q l) (3 4))
-     ;  )) '((a b) ((= x (+ a b))) procedure))
-
-
-; create-closure -> formal parameters function
-;(check-equal? (get-form-params-from-closure '((a b) ((= x (+ a b))) procedure)) '(a b))
-; create-closure -> function body function
-;(check-equal? (get-fn-body-from-closure '((a b) ((= x (+ a b))) procedure)) '((= x (+ a b))))
-; create-closure -> env-creator-function
-;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
-
-
-;(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
-;(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
-
-;(check-equal? (find-function 'main (cdr state1)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
-;(check-equal? (find-function 'main (cdr state2)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
