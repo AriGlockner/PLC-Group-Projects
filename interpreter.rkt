@@ -30,7 +30,7 @@
         (main-fn-closure (find-function-in-class 'main entry-class-closure)) ; Step 3
         (main-env ((get-env-creator-from-closure main-fn-closure) global-env '())) ; Step 4
         (fn_body (cadr main-fn-closure)))
-    (scheme->language (execute-main fn_body main-env (lambda (v) v)
+    (scheme->language (execute-main fn_body (debug main-env) (lambda (v) v)
                              (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                              (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))) ; Step 4a
 
@@ -42,10 +42,11 @@
 
 
 (define (execute-main fn_body env return break continue throw next)
+  (println "inside execute-main")
   (next
        (interpret-statement-list
         fn_body
-        env
+        (debug env)
         return
         break
         continue
@@ -79,17 +80,18 @@
 
 ; interprets a list of statements.  The state/environment from each statement is used for the next ones.
 (define (interpret-statement-list statement-list environment return break continue throw next)
+  (println "inside interpret-statement-list")
   (cond
-    ((null? statement-list) (next environment))
+    ((null? statement-list) (next (debug environment)))
     (else
      ;(display statement-list)
       (interpret-statement (operator statement-list)
-                           environment
+                           (debug environment)
                            return
                            break
                            continue
                            throw
-                           (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next))))))
+                           (lambda (env) (interpret-statement-list (remainingframes statement-list) (debug env) return break continue throw next))))))
 
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
@@ -280,17 +282,19 @@
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
 (define (eval-expression expr enviroment throw)
-  (eval-expression-cps expr enviroment throw (lambda (v) v)))
+  (println "inside eval-expression")
+  (eval-expression-cps expr (debug enviroment) throw (lambda (v) v)))
 
 (define eval-expression-cps
   (lambda (expr environment throw return)
+    (println "inside eval-expression-cps")
     (cond
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
       ((not (list? expr)) (return (lookup expr environment)))
       ((eq? (car expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
-      ((eq? (car expr) 'new) (make-instance-closure (cadr expr)  environment throw))
+      ((eq? (car expr) 'new) (make-instance-closure (cadr expr) (debug environment) throw))
       (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
@@ -464,20 +468,22 @@
 ; (name of class, env) --> class closure
 (define find-class-closure
   (lambda (name env)
+    (println "first is get-class-name-list\nsecond is get-class-closure-list")
     (cond
       ((empty? env) (error "empty env"))
       (else
-       (find-class-closure-cps name (get-class-name-list env) (get-class-closure-list env))
+       (find-class-closure-cps name (debug (get-class-name-list env)) (debug (get-class-closure-list env)))
       ))))
 
 ; helper for find-class-closure
 (define find-class-closure-cps
   (lambda (name class-names class-closures)
+    (println "inside find-class-closure-cps")
     (cond
       ((or (eq? class-names '()) (eq? class-names '())) (error "class does not exist in state"))
       ((eq? name (car class-names))
        (car class-closures))
-      (else (find-class-closure-cps name (cdr class-names) (cdr class-closures)))
+      (else (find-class-closure-cps name (cdr class-names) (debug (cdr class-closures))))
       )))
 
 ; (closure, var) --> var index
@@ -622,10 +628,11 @@
 ; get and evaluates fields
 (define get-instance-fields
   (lambda (class-name env throw)
+    (println "inside get-instance-fields")
     (cond
       ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
       (else
-       (let ((class-closure (find-class-closure class-name env)))
+       (let ((class-closure (find-class-closure class-name (debug env))))
          (if (list? class-closure)
              (get-instance-fields-cps (caddr class-closure) env throw)
              (error "Invalid class-closure")))))))
