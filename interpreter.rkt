@@ -23,14 +23,14 @@
          (main-fn-closure (find-function-in-class 'main entry-class-closure))
          (main-env ((get-env-creator-from-closure main-fn-closure) global-env '()))
          (fn_body (operand1 main-fn-closure)))
-    (scheme->language (execute-main fn_body main-env (lambda (v) v)
+    (scheme->language (execute-main fn_body main-env default-lambda
                                     (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                                     (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env)))))
 
 ; Compiles all classes
 (define (get-all-classes file entryclass)
   (scheme->language
-   (interpret-statement-list (parser file) (initenvironment) (lambda (v) v)
+   (interpret-statement-list (parser file) (initenvironment) default-lambda
                              (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                              (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))
 
@@ -79,7 +79,7 @@
          (env-creator (get-env-creator-from-closure closure)))
     
     ; Interpret the function
-    (interpret-statement-list fn_body (env-creator environment actual_params) (lambda (v) v) (lambda (env) (myerror "Break used outside of loop"))
+    (interpret-statement-list fn_body (env-creator environment actual_params) default-lambda (lambda (env) (myerror "Break used outside of loop"))
                               (lambda (env) (myerror "Continue used outside of loop")) throw (lambda (env) env))))
 
 ; Calls a function in a state
@@ -196,7 +196,7 @@
     ((not (eq? function (operator (first-frame-variables enviroment))))
      (lookup-function-closure function (combine (combine (remove1 (first-frame-variables enviroment)) (list (remove1 (first-frame-values enviroment)))) (pop-frame enviroment))))
     ; sometimes it's not the only thing left in the list, so take the car
-    ((and (eq? function (operator (first-frame-variables enviroment))) (list? (caar (first-frame-values enviroment))))
+    ((and (eq? function (operator (first-frame-variables enviroment))) (list? (operator2 (first-frame-values enviroment))))
      (operator (first-frame-values enviroment)))
     ; if its the first variable in the first frame then return the value
     ((eq? function (operator (first-frame-variables enviroment)))
@@ -215,7 +215,7 @@
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
 (define (eval-expression expr enviroment throw)
-  (eval-expression-cps expr enviroment throw (lambda (v) v)))
+  (eval-expression-cps expr enviroment throw default-lambda))
 
 (define eval-expression-cps
   (lambda (expr environment throw return)
@@ -230,7 +230,7 @@
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
 ; pass the result to eval-binary-op2 to evaluate the right operand.  This forces the operands to be evaluated in the proper order in case you choose
 ; to add side effects to the interpreter
-(define (eval-operator expr enviroment throw) (eval-operator-cps expr enviroment throw (lambda (v) v)))
+(define (eval-operator expr enviroment throw) (eval-operator-cps expr enviroment throw default-lambda))
 
 (define (eval-operator-cps expr environment throw return)
   (cond
@@ -244,7 +244,7 @@
                       (lambda (r-op1) (return (eval-binary-op2 expr r-op1 environment throw)))))))
 
 ; Complete the evaluation of the binary operator by evaluating the second operand and performing the operation.
-(define (eval-binary-op2 expr op1value enviroment throw) (eval-binary-op2-cps expr op1value enviroment throw (lambda (v) v)))
+(define (eval-binary-op2 expr op1value enviroment throw) (eval-binary-op2-cps expr op1value enviroment throw default-lambda))
 
 (define (eval-binary-op2-cps expr op1value environment throw return)
   (cond
@@ -305,6 +305,8 @@
 
 ; These helper functions define the operator and operands of a value expression
 (define operator car)
+(define operator2 caar)
+
 (define operand1 cadr)
 (define operand2 caddr)
 (define operand3 cadddr)
@@ -341,6 +343,9 @@
 
 (define (catch-var catch-statement) (operator (operand1 catch-statement)))
 
+; Lambdas
+(define default-lambda (lambda (v) v))
+
 ;------------------------
 ; Class Closure Stuff
 ;-----------------------
@@ -357,19 +362,19 @@
     (list super_class field_names_and_init method_info)))
 
 ; Gets the fields in a class
-(define (get-field-info body) (get-field-info-cps body '(() ()) (lambda (v) v)))
+(define (get-field-info body) (get-field-info-cps body '(() ()) default-lambda))
 
 ; Helper function that gets the field info
 (define (get-field-info-cps body state return)
   (cond
     ((null? body) (return state))
-    ((eq? 'var (operator body)) (get-field-info-cps (remove1 body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
-    (else (return (get-field-info-cps (remove1 body) state (lambda (v) v))))))
+    ((eq? 'var (operator body)) (get-field-info-cps (remove1 body) (add-to-frame (cadar body) (caddar body) state) default-lambda))
+    (else (return (get-field-info-cps (remove1 body) state default-lambda)))))
 
 ; (env) --> list of class names
 (define (get-class-name-list env)
   (if (pair? env)
-      (caar env)
+      (operator2 env)
       (error "env not a pair")))
 
 ; (env) --> list of class closures
@@ -427,7 +432,7 @@
 (define (get-static-functions-list body)
   (cond
     ((eq? body '()) '())
-    ((eq? 'static-function (caar body))
+    ((eq? 'static-function (operator2 body))
      (if (eq? (cadar body) 'main)
          'main
          (get-static-functions-list (pop-frame body))))
@@ -437,14 +442,14 @@
 (define (get-functions-list body)
  (cond
    ((eq? body '()) '())
-   ((eq? 'function (caar body)) (combine (cadar body) (get-functions-list (pop-frame body))))
+   ((eq? 'function (operator2 body)) (combine (cadar body) (get-functions-list (pop-frame body))))
    (else (get-functions-list (pop-frame body)))))
 
 ; (body class-name global-env) --> ((methods names) (method closures))
 (define (get-methods-info body class-name global-env)
   (cond
     ((eq? body '()) '(()()))
-    ((or (eq? 'function (caar body)) (eq? 'static-function (caar body)))
+    ((or (eq? 'function (operator2 body)) (eq? 'static-function (operator2 body)))
      (let*
          ((name (cadar body))
           (formal-params (operator (cddar body)))
@@ -494,7 +499,7 @@
 ;---------------------------------------
 
 ; Creates a new instance of the class specified in the name parameter
-(define (create-object name env) (create-instance-closure (find-class-closure name env) (lambda (v) v)))
+(define (create-object name env) (create-instance-closure (find-class-closure name env) default-lambda))
 
 ; Copies the values from the class closure over to become the new object
 (define (create-instance-closure class-closure return)
@@ -516,18 +521,18 @@
 (define (newenvironment global params) (list (operator params) (operator global)))
 
 ; Gets the global variables out of an environment
-(define (get-globals env) (get-globals-cps env (lambda (v) v)))
+(define (get-globals env) (get-globals-cps env default-lambda))
 
 ; Helper to make this tail recursive
 (define (get-globals-cps env return)
   (cond
     ((null? env) (return '((() ()))))
     ((null? (remainingframes env)) (return env))
-    (else (return (get-globals-cps (remainingframes env) (lambda (v) v))))))
+    (else (return (get-globals-cps (remainingframes env) default-lambda)))))
 
 ; Binds the parameters to the values (or value of the expressions) that they are passed in with.
 (define (bind-actual-formal env actual-param-list formal-param-list)
-  (operator (bind-actual-formal-helper env actual-param-list formal-param-list '((() ())) (lambda (v) v) (lambda (v) v))))
+  (operator (bind-actual-formal-helper env actual-param-list formal-param-list '((() ())) default-lambda default-lambda)))
 
 ; Preforms the bindings for the bind-actual-formal function
 (define (bind-actual-formal-helper env actual-param-list formal-param-list binding return throw)
@@ -685,7 +690,7 @@
 (define (store frame) (operand1 frame))
 
 ; returns list of variables from the first frame
-(define (first-frame-variables env) (caar env))
+(define (first-frame-variables env) (operator2 env))
 
 ; returns list of values from the first frame
 (define (first-frame-values env) (cadar env))
@@ -710,7 +715,7 @@
     (else v)))
 
 ; Because the error function is not defined in R5RS scheme, I create my own:
-(define error-break (lambda (v) v))
+(define error-break default-lambda)
 (call-with-current-continuation (lambda (k) (set! error-break k)))
 
 (define (myerror str . vals) (error str))
