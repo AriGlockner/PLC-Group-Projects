@@ -28,9 +28,9 @@
          (global-env (get-all-classes file entryatom)) ; TODO: fill in with function to get global environment ; Step 1
         (entry-class-closure (find-class-closure entryatom global-env)) ; Step 2
         (main-fn-closure (find-function-in-class 'main entry-class-closure)) ; Step 3
-        (main-env ((get-env-creator-from-closure main-fn-closure) global-env '())) ; Step 4
+        (main-env ((get-env-creator-from-closure main-fn-closure) global-env '() global-env)) ; Step 4
         (fn_body (cadr main-fn-closure)))
-    (scheme->language (execute-main fn_body (debug main-env) (lambda (v) v)
+    (scheme->language (execute-main fn_body main-env (lambda (v) v)
                              (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                              (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))) ; Step 4a
 
@@ -42,11 +42,10 @@
 
 
 (define (execute-main fn_body env return break continue throw next)
-  (println "inside execute-main")
   (next
        (interpret-statement-list
         fn_body
-        (debug env)
+        env
         return
         break
         continue
@@ -80,18 +79,17 @@
 
 ; interprets a list of statements.  The state/environment from each statement is used for the next ones.
 (define (interpret-statement-list statement-list environment return break continue throw next)
-  (println "inside interpret-statement-list")
   (cond
-    ((null? statement-list) (next (debug environment)))
+    ((null? statement-list) (next environment))
     (else
      ;(display statement-list)
       (interpret-statement (operator statement-list)
-                           (debug environment)
+                           environment
                            return
                            break
                            continue
                            throw
-                           (lambda (env) (interpret-statement-list (remainingframes statement-list) (debug env) return break continue throw next))))))
+                           (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next))))))
 
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
@@ -282,19 +280,17 @@
 
 ; Evaluates all possible boolean and arithmetic expressions, including constants and variables.
 (define (eval-expression expr enviroment throw)
-  (println "inside eval-expression")
-  (eval-expression-cps expr (debug enviroment) throw (lambda (v) v)))
+  (eval-expression-cps expr enviroment throw (lambda (v) v)))
 
 (define eval-expression-cps
   (lambda (expr environment throw return)
-    (println "inside eval-expression-cps")
     (cond
       ((number? expr) (return expr))
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
       ((not (list? expr)) (return (lookup expr environment)))
       ((eq? (car expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
-      ((eq? (car expr) 'new) (make-instance-closure (cadr expr) (debug environment) throw))
+      ((eq? (car expr) 'new) (make-instance-closure (cadr expr) environment throw))
       (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
@@ -413,16 +409,20 @@
 ;-----------------------
 
 (define (add-class-closure statement environment)
+  (println "inside add-class-closure")
+  (println environment)
   (let ((class_name (get-class-name statement)))
     (insert class_name (make-class-closure class_name statement environment) environment)))
 
 (define (make-class-closure class_name statement environment)
+  (println "inside make-class-closure")
+  (println environment)
   (let* (
          (body (get-class-body statement))
     (super_class (find-super-or-null (get-super-class-name statement) environment))
     (field_names_and_init (get-field-info body))
     (method_info
-     (get-methods-info body class_name (get-globals environment))
+     (get-methods-info body class_name environment)
      ))
   (list super_class field_names_and_init method_info)
     ))
@@ -443,7 +443,7 @@
 (define get-class-name-list
   (lambda (env)
     (cond
-      ((pair? env) (caar env))
+      ((pair? env) (caar (get-globals env)))
       (else
        (error "env not a pair"))
       )))
@@ -452,7 +452,7 @@
 (define get-class-closure-list
   (lambda (env)
     (cond
-      ((pair? env) (cadar env))
+      ((pair? env) (cadar (get-globals env)))
       (else (error "env not a pair"))
       )))
 
@@ -468,22 +468,23 @@
 ; (name of class, env) --> class closure
 (define find-class-closure
   (lambda (name env)
-    (println "first is get-class-name-list\nsecond is get-class-closure-list")
     (cond
       ((empty? env) (error "empty env"))
       (else
-       (find-class-closure-cps name (debug (get-class-name-list env)) (debug (get-class-closure-list env)))
+       (find-class-closure-cps name (get-class-name-list env) (get-class-closure-list env))
       ))))
 
 ; helper for find-class-closure
 (define find-class-closure-cps
   (lambda (name class-names class-closures)
     (println "inside find-class-closure-cps")
+    (println class-names)
+    (println class-closures)
     (cond
-      ((or (eq? class-names '()) (eq? class-names '())) (error "class does not exist in state"))
+      ((eq? class-names '()) (error "class does not exist in state"))
       ((eq? name (car class-names))
-       (car class-closures))
-      (else (find-class-closure-cps name (cdr class-names) (debug (cdr class-closures))))
+        (car class-closures))
+      (else (find-class-closure-cps name (cdr class-names) (cdr class-closures)))
       )))
 
 ; (closure, var) --> var index
@@ -550,6 +551,8 @@
 ; (body class-name global-env) --> ((methods names) (method closures))
 (define get-methods-info
   (lambda (body class-name global-env)
+    (println "inside get-methods-info")
+    (println global-env)
     (cond
       ((eq? body '()) '(()()))
       ((or (eq? 'function (caar body)) (eq? 'static-function (caar body)))
@@ -568,23 +571,31 @@
 ; another thing ethan said
 (define create-method-closure
   (lambda (compile_type formal_params fn_body global_env)
-    (list formal_params fn_body (make-method-env-creator formal_params global_env)
+    (println "inside create-method-closure")
+    (println global_env)
+    (list formal_params fn_body (make-method-env-creator formal_params)
           (lambda () (find-class-closure (compile_type global_env))))
     ))
     
 ; do the thing ethan says
-(define (make-method-env-creator formal_param_list global_env)
-  (lambda (current_env actual_param_list)
+(define (make-method-env-creator formal_param_list)
+  (lambda (current_env actual_param_list global_env)
+    (println "inside make-method-env-creator AND lambda")
+    (println global_env)
+    (println current_env)
     (methods-env global_env current_env actual_param_list formal_param_list)))
 
 (define (methods-env global_env current-env actual-param-list formal-param-list)
+  (println "inside methods-env")
+  (println global_env)
+  (println current-env)
   (let ((env
          (cons
-          (bind-actual-formal current-env actual-param-list formal-param-list)
-          (list (debug global_env))
+          (debug (bind-actual-formal current-env actual-param-list formal-param-list))
+          global_env
           )
          ))
-    env
+    (debug env)
     )
   )
 
@@ -628,11 +639,10 @@
 ; get and evaluates fields
 (define get-instance-fields
   (lambda (class-name env throw)
-    (println "inside get-instance-fields")
     (cond
       ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
       (else
-       (let ((class-closure (find-class-closure class-name (debug env))))
+       (let ((class-closure (find-class-closure class-name env)))
          (if (list? class-closure)
              (get-instance-fields-cps (caddr class-closure) env throw)
              (error "Invalid class-closure")))))))
