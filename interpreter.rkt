@@ -477,9 +477,9 @@
 ; helper for find-class-closure
 (define find-class-closure-cps
   (lambda (name class-names class-closures)
-    (println "inside find-class-closure-cps")
-    (println class-names)
-    (println class-closures)
+;    (println "inside find-class-closure-cps")
+;    (println class-names)
+;    (println class-closures)
     (cond
       ((eq? class-names '()) (error "class does not exist in state"))
       ((eq? name (car class-names))
@@ -639,16 +639,30 @@
 ; get and evaluates fields
 (define get-instance-fields
   (lambda (class-name env throw)
-    (cond
-      ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
-      (else
-       (let ((class-closure (find-class-closure class-name env)))
-         (if (list? class-closure)
-             (get-instance-fields-cps (caddr class-closure) env throw)
-             (error "Invalid class-closure")))))))
+    (display (list "\n\ninside get-instance-fields:\n" class-name "\n" env "\n"))
+    (display (list "Class closure: " (find-class-closure class-name env) "\n"))
+    (display "\n\n")
+
+    (let ((class-closure (cdr (unbox (find-class-closure class-name env)))))
+      (display (car class-closure))
+      (if (null? class-closure)
+          (error "class-closure is empty")
+          (car class-closure)))))
+          ;(list (cadr class-closure) (cdadr class-closure))))))
+          ;(get-instance-fields-cps class-closure env throw)))))
+    
+;    (cond
+;      ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
+;      (else ((find-class-closure class-name env) env throw)))))
+;       (let ((class-closure (find-class-closure class-name env)))
+;         (if (list? class-closure)
+;             (get-instance-fields-cps (caddr class-closure) env throw)
+;             (error "Invalid class-closure")))))))
 
 (define get-instance-fields-cps
   (lambda (list-of-fields env throw)
+    (println "get-instance-fields-cps")
+    (println (list "fields: " list-of-fields))
     (cond
       ((null? list-of-fields) '())
       ((not (pair? list-of-fields)) (error "Invalid list-of-fields"))
@@ -984,5 +998,8 @@
 
 ;(check-equal? (find-function 'main (cdr state1)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
 ;(check-equal? (find-function 'main (cdr state2)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
+(define bar #&(null ((boo) (#&true)) ((main) ((() ((var b (new B)) (return (dot b boo))))))))
 
-;(interpret "tests/p4_t101.bad" "B")
+
+(interpret "tests/p4_t101.bad" "B")
+
