@@ -17,6 +17,9 @@
 ;(check-equal? (interpret "tests/p4_t12.bad" "List") 5285)
 ;(check-equal? (interpret "tests/p4_t13.bad" "C") -716)
 
-(check-equal? (interpret "tests/p4_t100.bad" "A") 5)
+;(check-equal? (interpret "tests/p4_t100.bad" "A") 5) ; Success
+;(display "\n\nStart Debugging:\n")
 ;(check-equal? (interpret "tests/p4_t101.bad" "A") 'true)
 ;(check-equal? (interpret "tests/p4_t102.bad" "A") 5)
+
+(define foo (interpret "tests/p4_t101.bad" "B"))
