@@ -212,7 +212,8 @@
 ; interpret something like "class A {body}" and add the class closure to the global state
 (define (interpret-class statement environment return break continue throw next)
   (next 
-   (add-class-closure statement environment)))
+   (debug (add-class-closure statement environment))
+   ))
 
 ; Interpret a try-catch-finally block
 
@@ -418,6 +419,7 @@
 (define (make-class-closure class_name statement environment)
   ;(println "inside make-class-closure")
   ;(println environment)
+  ;(display statement)
 ; (display class_name)
   (let* (
          (body (get-class-body statement))
@@ -432,14 +434,22 @@
     
 
 ; Gets the fields in a class
-(define (get-field-info body) (get-field-info-cps body '(() ()) (lambda (v) v)))
+(define (get-field-info body)
+  ;(display body)
+  (get-field-info-cps body '(() ()) (lambda (v) v)))
+
+
 
 ; Helper function that gets the field info
 (define (get-field-info-cps body state return)
   (cond
     ((null? body) (return state))
-    ((eq? 'var (car body)) (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
+    ((eq? 'var (caar body))
+   ;  (display (cadar body))
+     (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
     (else (return (get-field-info-cps (cdr body) state (lambda (v) v))))))
+
+
 
 ; (env) --> list of class names
 (define get-class-name-list
@@ -646,14 +656,14 @@
     (cond
       ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
       (else
-       (display " yo mama")
+       ;(display " yo mama")
       ; (display env)
-       (display (unbox (find-class-closure class-name env)))
+     ;  (display (unbox (find-class-closure class-name env)))
        
        (let ((class-closure (unbox (find-class-closure class-name env))))
          (cond
            ((list? class-closure)
-          ;  (display class-closure)
+         ;  (display class-closure)
           ;  (display env)
             (get-instance-fields-cps (caddr class-closure) env throw))
             (else
@@ -666,8 +676,8 @@
       ((null? list-of-fields) '())
       ((not (pair? list-of-fields)) (error "Invalid list-of-fields"))
       (else
-       (display "list of fields")
-       (display list-of-fields)
+    ;   (display "list of fields")
+  ;     (display list-of-fields)
      (cons (eval-expression (car list-of-fields) env throw)
              (get-instance-fields-cps (cdr list-of-fields) env throw))))))
 

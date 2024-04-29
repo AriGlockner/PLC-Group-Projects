@@ -22,5 +22,10 @@
 ;(check-equal? (interpret "tests/p4_t102.bad" "A") 5)
 
 
-
+;(interpret "tests/p4_t100.bad" "A")
 (interpret "tests/p4_t101.bad" "B")
+
+;(get-field-info '((var boo true) (static-function main () ((var a (+ 5 2)) (var b (new B)) (return (dot b boo))))))
+
+
+;(add-to-frame 'boo 'true '(()()))
