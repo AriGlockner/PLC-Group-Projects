@@ -436,7 +436,7 @@
 (define (get-field-info-cps body state return)
   (cond
     ((null? body) (return state))
-    ((eq? 'var (car body)) (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
+    ((eq? 'var (caar body)) (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
     (else (return (get-field-info-cps (cdr body) state (lambda (v) v))))))
 
 ; (env) --> list of class names
@@ -979,8 +979,10 @@
 ;(check-equal? (get-env-creator-from-closure '((a b) ((= x (+ a b))) procedure)) 'procedure)
 
 
-;(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
-;(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
+(check-equal? (get-field-info '((var x (* 3 6)))) '((x) (#&(* 3 6))))
+(check-equal? (get-field-info '((var x (5)) (var y (10)) (static function main () ()))) '((y x) (#&(10) #&(5))))
 
 ;(check-equal? (find-function 'main (cdr state1)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
 ;(check-equal? (find-function 'main (cdr state2)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
+
+;(interpret "tests/p4_t101.bad" "B")
