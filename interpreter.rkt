@@ -306,7 +306,8 @@
     ((and (eq? '- (operator expr)) (= 2 (length expr)))
      (eval-expression-cps (operand1 expr) environment throw
                       (lambda (r-op1) (return (- r-op1)))))
-    (else (eval-expression-cps (operand1 expr) environment throw
+    (else
+     (eval-expression-cps (operand1 expr) environment throw
                       (lambda (r-op1) (return (eval-binary-op2 expr r-op1 environment throw)))))))
 
 ; Complete the evaluation of the binary operator by evaluating the second operand and performing the operation.
@@ -409,14 +410,15 @@
 ;-----------------------
 
 (define (add-class-closure statement environment)
-  (println "inside add-class-closure")
-  (println environment)
+ ; (println "inside add-class-closure")
+ ; (println environment)
   (let ((class_name (get-class-name statement)))
     (insert class_name (make-class-closure class_name statement environment) environment)))
 
 (define (make-class-closure class_name statement environment)
-  (println "inside make-class-closure")
-  (println environment)
+  ;(println "inside make-class-closure")
+  ;(println environment)
+; (display class_name)
   (let* (
          (body (get-class-body statement))
     (super_class (find-super-or-null (get-super-class-name statement) environment))
@@ -471,15 +473,16 @@
     (cond
       ((empty? env) (error "empty env"))
       (else
+      ; (display env)
        (find-class-closure-cps name (get-class-name-list env) (get-class-closure-list env))
       ))))
 
 ; helper for find-class-closure
 (define find-class-closure-cps
   (lambda (name class-names class-closures)
-    (println "inside find-class-closure-cps")
-    (println class-names)
-    (println class-closures)
+   ; (println "inside find-class-closure-cps")
+   ; (println class-names)
+   ; (println class-closures)
     (cond
       ((eq? class-names '()) (error "class does not exist in state"))
       ((eq? name (car class-names))
@@ -551,8 +554,8 @@
 ; (body class-name global-env) --> ((methods names) (method closures))
 (define get-methods-info
   (lambda (body class-name global-env)
-    (println "inside get-methods-info")
-    (println global-env)
+  ;  (println "inside get-methods-info")
+  ;  (println global-env)
     (cond
       ((eq? body '()) '(()()))
       ((or (eq? 'function (caar body)) (eq? 'static-function (caar body)))
@@ -571,8 +574,8 @@
 ; another thing ethan said
 (define create-method-closure
   (lambda (compile_type formal_params fn_body global_env)
-    (println "inside create-method-closure")
-    (println global_env)
+   ; (println "inside create-method-closure")
+ ;   (println global_env)
     (list formal_params fn_body (make-method-env-creator formal_params)
           (lambda () (find-class-closure (compile_type global_env))))
     ))
@@ -580,22 +583,22 @@
 ; do the thing ethan says
 (define (make-method-env-creator formal_param_list)
   (lambda (current_env actual_param_list global_env)
-    (println "inside make-method-env-creator AND lambda")
-    (println global_env)
-    (println current_env)
+  ;  (println "inside make-method-env-creator AND lambda")
+ ;   (println global_env)
+  ;  (println current_env)
     (methods-env global_env current_env actual_param_list formal_param_list)))
 
 (define (methods-env global_env current-env actual-param-list formal-param-list)
-  (println "inside methods-env")
-  (println global_env)
-  (println current-env)
+ ; (println "inside methods-env")
+ ; (println global_env)
+ ; (println current-env)
   (let ((env
          (cons
-          (debug (bind-actual-formal current-env actual-param-list formal-param-list))
+           (bind-actual-formal current-env actual-param-list formal-param-list)
           global_env
           )
          ))
-    (debug env)
+    env
     )
   )
 
@@ -633,6 +636,7 @@
     (cond
       ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
       (else
+       (display (get-instance-fields class-name env throw))
        (cons (find-class-closure class-name env) (list (get-instance-fields class-name env throw)))
        ))))
 
@@ -642,20 +646,32 @@
     (cond
       ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
       (else
-       (let ((class-closure (find-class-closure class-name env)))
-         (if (list? class-closure)
-             (get-instance-fields-cps (caddr class-closure) env throw)
-             (error "Invalid class-closure")))))))
-
+       (display " yo mama")
+      ; (display env)
+       (display (unbox (find-class-closure class-name env)))
+       
+       (let ((class-closure (unbox (find-class-closure class-name env))))
+         (cond
+           ((list? class-closure)
+          ;  (display class-closure)
+          ;  (display env)
+            (get-instance-fields-cps (caddr class-closure) env throw))
+            (else
+             (error "Invalid class-closure"))))))))
+        
+            
 (define get-instance-fields-cps
   (lambda (list-of-fields env throw)
     (cond
       ((null? list-of-fields) '())
       ((not (pair? list-of-fields)) (error "Invalid list-of-fields"))
       (else
-       (cons (eval-expression (car list-of-fields) env throw)
+       (display "list of fields")
+       (display list-of-fields)
+     (cons (eval-expression (car list-of-fields) env throw)
              (get-instance-fields-cps (cdr list-of-fields) env throw))))))
 
+       
 ;----------------------------
 ; Environment/State Functions
 ;----------------------------
@@ -984,3 +1000,5 @@
 
 ;(check-equal? (find-function 'main (cdr state1)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
 ;(check-equal? (find-function 'main (cdr state2)) '(() (BODY_OF_MAIN) (FUNCTION_TO_CREATE_ENV) (FUNCTION_TO_GET_RUNTIME_TYPE)))
+
+;(interpret "tests/p4_t101.bad" "B")
