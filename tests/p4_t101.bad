@@ -1,6 +1,7 @@
 class B {
   var boo = true;
   static function main() {
+	var a = 5 + 2;
     var b = new B();
     return b.boo;
   }

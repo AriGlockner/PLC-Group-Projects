@@ -18,14 +18,14 @@
 ; Interprets the file. After compilation, runs the class's main body from entryclass
 (define (interpret file entryclass)
   (let* ((entryatom (string->symbol entryclass))
-         (global-env (get-all-classes file entryatom))
-         (entry-class-closure (find-class-closure entryatom global-env))
-         (main-fn-closure (find-function-in-class 'main entry-class-closure))
-         (main-env ((get-env-creator-from-closure main-fn-closure) global-env '()))
-         (fn_body (operand1 main-fn-closure)))
-    (scheme->language (execute-main fn_body main-env default-lambda
-                                    (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
-                                    (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env)))))
+         (global-env (get-all-classes file entryatom)) ; TODO: fill in with function to get global environment ; Step 1
+        (entry-class-closure (find-class-closure entryatom global-env)) ; Step 2
+        (main-fn-closure (find-function-in-class 'main entry-class-closure)) ; Step 3
+        (main-env ((get-env-creator-from-closure main-fn-closure) global-env '() global-env)) ; Step 4
+        (fn_body (cadr main-fn-closure)))
+    (scheme->language (execute-main fn_body main-env (lambda (v) v)
+                             (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
+                             (lambda (v env) (myerror "Uncaught exception thrown")) (lambda (env) env))))) ; Step 4a
 
 ; Compiles all classes
 (define (get-all-classes file entryclass)
@@ -49,6 +49,7 @@
       (next environment)
       (interpret-statement (operator statement-list) environment return break continue throw
                            (lambda (env) (interpret-statement-list (remainingframes statement-list) env return break continue throw next)))))
+
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw, and "next statement"
 (define (interpret-statement statement environment return break continue throw next)
@@ -224,7 +225,8 @@
       ((eq? expr 'true) (return #t))
       ((eq? expr 'false) (return #f))
       ((not (list? expr)) (return (lookup expr environment)))
-      ((eq? (operator expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
+      ((eq? (car expr) 'funcall) (return (interpret-funcall-value expr environment throw)))
+      ((eq? (car expr) 'new) (make-instance-closure (cadr expr) environment throw))
       (else (return (eval-operator expr environment throw))))))
 
 ; Evaluate a binary (or unary) operator.  Although this is not dealing with side effects, I have the routine evaluate the left operand first and then
@@ -240,7 +242,8 @@
     ((and (eq? '- (operator expr)) (= 2 (length expr)))
      (eval-expression-cps (operand1 expr) environment throw
                       (lambda (r-op1) (return (- r-op1)))))
-    (else (eval-expression-cps (operand1 expr) environment throw
+    (else
+     (eval-expression-cps (operand1 expr) environment throw
                       (lambda (r-op1) (return (eval-binary-op2 expr r-op1 environment throw)))))))
 
 ; Complete the evaluation of the binary operator by evaluating the second operand and performing the operation.
@@ -355,33 +358,50 @@
     (insert class_name (make-class-closure class_name statement environment) environment)))
 
 (define (make-class-closure class_name statement environment)
-  (let* ((body (get-class-body statement))
-         (super_class (find-super-or-null (get-super-class-name statement) environment))
-         (field_names_and_init (get-field-info body))
-         (method_info (get-methods-info body class_name (get-globals environment))))
-    (list super_class field_names_and_init method_info)))
+  (let* (
+         (body (get-class-body statement))
+    (super_class (find-super-or-null (get-super-class-name statement) environment))
+    (field_names_and_init (get-field-info body))
+    (method_info
+     (get-methods-info body class_name environment)
+     ))
+  (list super_class field_names_and_init method_info)
+    ))
+
+    
 
 ; Gets the fields in a class
-(define (get-field-info body) (get-field-info-cps body '(() ()) default-lambda))
+(define (get-field-info body)
+  (get-field-info-cps body '(() ()) (lambda (v) v)))
+
+
 
 ; Helper function that gets the field info
 (define (get-field-info-cps body state return)
   (cond
     ((null? body) (return state))
-    ((eq? 'var (operator body)) (get-field-info-cps (remove1 body) (add-to-frame (cadar body) (caddar body) state) default-lambda))
-    (else (return (get-field-info-cps (remove1 body) state default-lambda)))))
+    ((eq? 'var (caar body))
+     (get-field-info-cps (cdr body) (add-to-frame (cadar body) (caddar body) state) (lambda (v) v)))
+    (else (return (get-field-info-cps (cdr body) state (lambda (v) v))))))
+
+
 
 ; (env) --> list of class names
-(define (get-class-name-list env)
-  (if (pair? env)
-      (operator2 env)
-      (error "env not a pair")))
+(define get-class-name-list
+  (lambda (env)
+    (cond
+      ((pair? env) (caar (get-globals env)))
+      (else
+       (error "env not a pair"))
+      )))
 
 ; (env) --> list of class closures
-(define (get-class-closure-list env)
-  (if (pair? env)
-      (cadar env)
-      (error "env not a pair")))
+(define get-class-closure-list
+  (lambda (env)
+    (cond
+      ((pair? env) (cadar (get-globals env)))
+      (else (error "env not a pair"))
+      )))
 
 ; (name, env) --> find super or null --> find-class-closure
 (define (find-super-or-null name env)
@@ -397,11 +417,14 @@
       (find-class-closure-cps name (get-class-name-list env) (get-class-closure-list env))))
 
 ; helper for find-class-closure
-(define (find-class-closure-cps name class-names class-closures)
-  (cond
-    ((or (eq? class-names '()) (eq? class-names '())) (error "class does not exist in state"))
-    ((eq? name (operator class-names)) (operator class-closures))
-    (else (find-class-closure-cps name (remove1 class-names) (remove1 class-closures)))))
+(define find-class-closure-cps
+  (lambda (name class-names class-closures)
+    (cond
+      ((eq? class-names '()) (error "class does not exist in state"))
+      ((eq? name (car class-names))
+        (car class-closures))
+      (else (find-class-closure-cps name (cdr class-names) (cdr class-closures)))
+      )))
 
 ; (closure, var) --> var index
 (define (get-var-index closure v)
@@ -423,10 +446,14 @@
     (else (operand1 (operand2 statement)))))
 
 ; (statement) --> class_body
-(define (get-class-body statement)
-  (if (empty? statement)
-      (error "class is empty")
-      (operand3 statement)))
+(define get-class-body
+  (lambda (statement)
+    (cond
+      ((empty? statement) (error "class is empty"))
+      (else
+       (cadddr statement)
+       )
+      )))
 
 ; (body) --> (list of static functions)
 (define (get-static-functions-list body)
@@ -460,17 +487,27 @@
     (else (get-methods-info (pop-frame body) class-name global-env))))
          
 ; another thing ethan said
-(define (create-method-closure compile_type formal_params fn_body global_env)
-  (list formal_params fn_body (make-method-env-creator formal_params global_env)
-        (lambda () (find-class-closure (compile_type global_env)))))
+(define create-method-closure
+  (lambda (compile_type formal_params fn_body global_env)
+    (list formal_params fn_body (make-method-env-creator formal_params)
+          (lambda () (find-class-closure (compile_type global_env))))
+    ))
     
 ; do the thing ethan says
-(define (make-method-env-creator formal_param_list global_env)
-  (lambda (current_env actual_param_list)
+(define (make-method-env-creator formal_param_list)
+  (lambda (current_env actual_param_list global_env)
     (methods-env global_env current_env actual_param_list formal_param_list)))
 
 (define (methods-env global_env current-env actual-param-list formal-param-list)
-  (let ((env (combine (bind-actual-formal current-env actual-param-list formal-param-list) (list global_env)))) env))
+  (let ((env
+         (cons
+           (bind-actual-formal current-env actual-param-list formal-param-list)
+          global_env
+          )
+         ))
+    env
+    )
+  )
 
 ;------------------------
 ; Closure Functions
@@ -498,15 +535,40 @@
 ; Create an Object (instantiate a class)
 ;---------------------------------------
 
-; Creates a new instance of the class specified in the name parameter
-(define (create-object name env) (create-instance-closure (find-class-closure name env) default-lambda))
+; make an instance closure ((class closure)(field values))
+(define make-instance-closure
+  (lambda (class-name env throw)
+    (cond
+      ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
+      (else
+       (get-instance-fields class-name env throw)
+       (cons (find-class-closure class-name env) (list (get-instance-fields class-name env throw)))
+       ))))
 
-; Copies the values from the class closure over to become the new object
-(define (create-instance-closure class-closure return)
-  (if (null? class-closure)
-      (return '())
-      (return (create-instance-closure (remove1 class-closure) (lambda (v) (combine (operator class-closure) v))))))
+; get and evaluates fields
+(define get-instance-fields
+  (lambda (class-name env throw)
+    (cond
+      ((null? (find-class-closure class-name env)) (error "class-closure is empty"))
+      (else
+       (let ((class-closure (unbox (find-class-closure class-name env))))
+         (cond
+           ((list? class-closure)
+            (get-instance-fields-cps (caddr class-closure) env throw))
+            (else
+             (error "Invalid class-closure"))))))))
+        
+            
+(define get-instance-fields-cps
+  (lambda (list-of-fields env throw)
+    (cond
+      ((null? list-of-fields) '())
+      ((not (pair? list-of-fields)) (error "Invalid list-of-fields"))
+      (else
+     (cons (eval-expression (car list-of-fields) env throw)
+             (get-instance-fields-cps (cdr list-of-fields) env throw))))))
 
+       
 ;----------------------------
 ; Environment/State Functions
 ;----------------------------
